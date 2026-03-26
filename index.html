@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fine-tuning π0.5 on Baxter in MuJoCo</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+</head>
+<body>
+
+<!-- ─── HERO ────────────────────────────────────────────────────────────── -->
+<header class="hero">
+  <div class="container">
+    <p class="venue">Robotics Research · IIT Gandhinagar · 2025–2026</p>
+    <h1>Fine-tuning <span class="pi">π0.5</span> on a Baxter Robot<br>in MuJoCo Simulation</h1>
+    <p class="subtitle">
+      Adapting a 3-billion-parameter Vision-Language-Action model to a scripted
+      cube-pushing task using LoRA fine-tuning on 100 simulated demonstrations.
+    </p>
+    <div class="authors">
+      <span>Saniya Patwardhan</span>
+      <span class="sep">·</span>
+      <span>Human–Robot Collaboration &amp; Vision Lab</span>
+    </div>
+    <div class="links">
+      <a href="https://github.com/hrcvla" class="btn btn-outline">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.44 9.8 8.2 11.39.6.11.82-.26.82-.58v-2.03c-3.34.72-4.04-1.61-4.04-1.61-.54-1.38-1.33-1.75-1.33-1.75-1.09-.74.08-.73.08-.73 1.2.08 1.84 1.24 1.84 1.24 1.07 1.83 2.8 1.3 3.49 1 .11-.78.42-1.3.76-1.6-2.67-.3-5.47-1.33-5.47-5.93 0-1.31.47-2.38 1.24-3.22-.12-.3-.54-1.52.12-3.18 0 0 1.01-.32 3.3 1.23a11.5 11.5 0 0 1 3-.4c1.02.005 2.04.138 3 .4 2.28-1.55 3.29-1.23 3.29-1.23.66 1.66.24 2.88.12 3.18.77.84 1.23 1.91 1.23 3.22 0 4.61-2.81 5.63-5.48 5.92.43.37.81 1.1.81 2.22v3.29c0 .32.22.7.83.58C20.57 21.8 24 17.3 24 12c0-6.63-5.37-12-12-12z"/></svg>
+        GitHub
+      </a>
+      <a href="https://wandb.ai/patwardhan-saniya-indian-institute-of-technology-gandhinagar/openpi" class="btn btn-outline">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg>
+        W&amp;B Logs
+      </a>
+      <a href="https://github.com/Physical-Intelligence/openpi" class="btn btn-outline">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm-1 7V3.5L18.5 9H13z"/></svg>
+        openpi
+      </a>
+    </div>
+  </div>
+</header>
+
+<!-- ─── DEMO FRAMES ──────────────────────────────────────────────────────── -->
+<section class="section section-dark">
+  <div class="container">
+    <h2>Simulated Demonstrations</h2>
+    <p class="section-desc">
+      100 scripted demonstrations of a 7-DOF Baxter right arm pushing a red cube
+      across a table in MuJoCo. Each episode is ~7.6 seconds of dynamic
+      velocity-controlled motion collected at 100 Hz and downsampled to 10 Hz.
+    </p>
+    <div class="frame-grid">
+      <figure>
+        <img src="assets/scene_approach.png" alt="Scene camera — approach phase" />
+        <figcaption>Scene camera · Approach phase</figcaption>
+      </figure>
+      <figure>
+        <img src="assets/scene_push.png" alt="Scene camera — push phase" />
+        <figcaption>Scene camera · Push phase</figcaption>
+      </figure>
+      <figure>
+        <img src="assets/wrist_approach.png" alt="Wrist camera — approach phase" />
+        <figcaption>Wrist camera · Approach phase</figcaption>
+      </figure>
+      <figure>
+        <img src="assets/wrist_push.png" alt="Wrist camera — push phase" />
+        <figcaption>Wrist camera · Push phase</figcaption>
+      </figure>
+    </div>
+    <div class="stats-row">
+      <div class="stat"><span class="stat-num">100</span><span class="stat-label">demonstrations</span></div>
+      <div class="stat"><span class="stat-num">92%</span><span class="stat-label">success yield</span></div>
+      <div class="stat"><span class="stat-num">7,700</span><span class="stat-label">training frames</span></div>
+      <div class="stat"><span class="stat-num">10 Hz</span><span class="stat-label">stored rate</span></div>
+      <div class="stat"><span class="stat-num">7 DOF</span><span class="stat-label">action space</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── METHOD ──────────────────────────────────────────────────────────── -->
+<section class="section">
+  <div class="container">
+    <h2>Method</h2>
+    <p class="section-desc">
+      We fine-tune <strong>π0.5</strong> — Physical Intelligence's 3B-parameter
+      Vision-Language-Action model — on our simulated demonstrations using
+      Low-Rank Adaptation (LoRA) to fit within a single 32 GB GPU.
+    </p>
+
+    <div class="pipeline">
+      <div class="pipe-step">
+        <div class="pipe-icon">🎮</div>
+        <h3>Demo Collection</h3>
+        <p>Scripted P-controller + gravity compensation in MuJoCo. Dynamic velocity actuators, randomised cube position ±4 cm.</p>
+        <code>record_demos.py</code>
+      </div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-step">
+        <div class="pipe-icon">🗄️</div>
+        <h3>Format Conversion</h3>
+        <p>HDF5 → LeRobot dataset format at 10 Hz. LIBERO key convention so existing transforms apply directly.</p>
+        <code>convert_to_lerobot.py</code>
+      </div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-step">
+        <div class="pipe-icon">⚗️</div>
+        <h3>Norm Stats</h3>
+        <p>Per-joint quantile normalisation statistics computed over the full dataset and bundled with each checkpoint.</p>
+        <code>compute_norm_stats.py</code>
+      </div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-step">
+        <div class="pipe-icon">🧠</div>
+        <h3>LoRA Fine-tuning</h3>
+        <p>π0.5-base weights frozen. LoRA adapters (rank 16) trained on PaliGemma + action expert via flow matching.</p>
+        <code>train.py pi05_baxter</code>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── MODEL ───────────────────────────────────────────────────────────── -->
+<section class="section section-dark">
+  <div class="container">
+    <h2>Model Architecture</h2>
+    <div class="two-col">
+      <div class="col-text">
+        <h3>π0.5 — Vision-Language-Action</h3>
+        <p>
+          π0.5 is built on <strong>PaliGemma</strong> (Google's 3B VLM) with an added
+          <strong>300M action expert</strong> that communicates via cross-attention at
+          every transformer layer. It generates actions through <strong>flow matching</strong>
+          — a continuous diffusion process that denoises a chunk of Gaussian noise into
+          a 1-second action sequence.
+        </p>
+        <h3>Flow Matching Loss</h3>
+        <p>
+          At each training step a random timestep <em>t</em> ∈ [0, 1] is sampled.
+          The clean action is linearly interpolated with Gaussian noise to produce a
+          noisy action <em>x<sub>t</sub></em>. The model predicts the velocity field
+          that maps noise back to the clean action:
+        </p>
+        <div class="math-block">
+          x<sub>t</sub> = t · ε + (1 − t) · a<br>
+          u<sub>t</sub> = ε − a<br>
+          ℒ = MSE(v<sub>θ</sub>(x<sub>t</sub>, t, obs), u<sub>t</sub>)
+        </div>
+        <p>
+          At inference, 10 Euler denoising steps integrate the velocity field from
+          <em>t</em>=1 to <em>t</em>=0, producing a 10-step action chunk.
+        </p>
+      </div>
+      <div class="col-diagram">
+        <div class="arch-box">
+          <div class="arch-row arch-input">
+            <div class="arch-block img-block">Scene<br>Camera</div>
+            <div class="arch-block img-block">Wrist<br>Camera</div>
+            <div class="arch-block lang-block">Language<br><em>"move the cube to the right"</em></div>
+            <div class="arch-block state-block">Joint<br>State (7)</div>
+          </div>
+          <div class="arch-arrow-down">↓ patch / token embedding</div>
+          <div class="arch-row arch-model">
+            <div class="arch-big paligemma">
+              PaliGemma<br><small>2B params · frozen</small><br>
+              <div class="lora-badge">+ LoRA r=16</div>
+            </div>
+            <div class="arch-big action-expert">
+              Action Expert<br><small>300M params · frozen</small><br>
+              <div class="lora-badge">+ LoRA r=16</div>
+            </div>
+          </div>
+          <div class="arch-arrow-down">↓ action token readout</div>
+          <div class="arch-row arch-output">
+            <div class="arch-block out-block">Action Chunk<br>(10 × 7) vel cmds</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── SIMULATION ──────────────────────────────────────────────────────── -->
+<section class="section">
+  <div class="container">
+    <h2>Simulation Setup</h2>
+    <div class="table-wrap">
+      <table>
+        <tr><th>Property</th><th>Value</th></tr>
+        <tr><td>Robot</td><td>Baxter (15 DOF — head + 2 × 7 DOF arms)</td></tr>
+        <tr><td>Controlled arm</td><td>Right arm only (7 DOF velocity control)</td></tr>
+        <tr><td>Actuator type</td><td>Velocity with kv = 30 (shoulder/elbow), kv = 10 (wrist)</td></tr>
+        <tr><td>Controller</td><td>P-feedback + gravity/Coriolis feedforward on d.ctrl</td></tr>
+        <tr><td>Physics timestep</td><td>2 ms (500 Hz)</td></tr>
+        <tr><td>Control rate</td><td>100 Hz (N_SUBSTEPS = 5)</td></tr>
+        <tr><td>Cameras</td><td>scene_camera (55° fovy) + right_hand_camera (90° fovy)</td></tr>
+        <tr><td>Image resolution</td><td>224 × 224 px</td></tr>
+        <tr><td>Task object</td><td>5 cm red cube, mass 50 g, free joint</td></tr>
+        <tr><td>Task</td><td>Push cube ≥ 6 cm in −Y (success criterion)</td></tr>
+        <tr><td>Cube start position</td><td>(0.65, −0.20 ± 0.04, 0.525) m</td></tr>
+        <tr><td>Collision handling</td><td>Arm passes through table; arm–cube contact physical</td></tr>
+      </table>
+    </div>
+
+    <h3 class="subsection-title">Episode Phases</h3>
+    <div class="phase-list">
+      <div class="phase">
+        <span class="phase-label">Phase 0a</span>
+        <span class="phase-steps">300 steps</span>
+        <p>Shoulder joint (s0) sweeps from home position to align laterally with the cube while joints 1–6 stay folded.</p>
+      </div>
+      <div class="phase">
+        <span class="phase-label">Phase 0b</span>
+        <span class="phase-steps">400 steps</span>
+        <p>Joints 1–6 interpolate from home to approach configuration at the fixed shoulder angle, descending toward the workspace.</p>
+      </div>
+      <div class="phase">
+        <span class="phase-label">Phase 1</span>
+        <span class="phase-steps">≤ 600 steps</span>
+        <p>Shoulder sweeps continuously in −Y, arm pushes the cube across the table. Episode terminates early on success.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── TRAINING ─────────────────────────────────────────────────────────── -->
+<section class="section section-dark">
+  <div class="container">
+    <h2>Training Configuration</h2>
+    <div class="two-col">
+      <div class="col-text">
+        <h3>LoRA Fine-tuning</h3>
+        <p>
+          Full fine-tuning of π0.5 requires ~50 GB of GPU memory. Using LoRA
+          (rank 16) on both PaliGemma and the action expert reduces peak usage
+          to ~17 GB — fitting within a single RTX 5090 (32 GB).
+        </p>
+        <p>
+          Only ~30–50 million of the 3 billion parameters are updated.
+          The base model weights remain frozen; LoRA adapter matrices
+          (A ∈ ℝ<sup>d×r</sup>, B ∈ ℝ<sup>r×d</sup>, r=16) are inserted at
+          every attention projection and trained with AdamW.
+        </p>
+        <h3>Hyperparameters</h3>
+        <div class="hp-grid">
+          <div class="hp-row"><span>Base model</span><code>pi05_base</code></div>
+          <div class="hp-row"><span>LoRA rank</span><code>16</code></div>
+          <div class="hp-row"><span>Batch size</span><code>4</code></div>
+          <div class="hp-row"><span>Peak LR</span><code>2e-4</code></div>
+          <div class="hp-row"><span>LR schedule</span><code>cosine decay</code></div>
+          <div class="hp-row"><span>Warmup steps</span><code>500</code></div>
+          <div class="hp-row"><span>Total steps</span><code>20,000</code></div>
+          <div class="hp-row"><span>Grad clip</span><code>1.0</code></div>
+          <div class="hp-row"><span>Optimizer</span><code>AdamW</code></div>
+          <div class="hp-row"><span>Action horizon</span><code>10 steps (1 s)</code></div>
+          <div class="hp-row"><span>Framework</span><code>JAX / Flax NNX</code></div>
+          <div class="hp-row"><span>Hardware</span><code>RTX 5090 32 GB</code></div>
+        </div>
+      </div>
+      <div class="col-text">
+        <h3>Data Pipeline</h3>
+        <div class="pipeline-text">
+          <div class="pt-step"><span class="pt-num">1</span><div><strong>HDF5 demos</strong><br>100 episodes × ~761 steps @ 100 Hz</div></div>
+          <div class="pt-arrow">↓</div>
+          <div class="pt-step"><span class="pt-num">2</span><div><strong>LeRobot dataset</strong><br>Downsampled to 10 Hz · LIBERO key convention</div></div>
+          <div class="pt-arrow">↓</div>
+          <div class="pt-step"><span class="pt-num">3</span><div><strong>RepackTransform</strong><br>image → observation/image · task → prompt</div></div>
+          <div class="pt-arrow">↓</div>
+          <div class="pt-step"><span class="pt-num">4</span><div><strong>LiberoInputs</strong><br>Build image dict · zero-pad missing camera</div></div>
+          <div class="pt-arrow">↓</div>
+          <div class="pt-step"><span class="pt-num">5</span><div><strong>Normalise</strong><br>Quantile z-score from precomputed stats</div></div>
+          <div class="pt-arrow">↓</div>
+          <div class="pt-step"><span class="pt-num">6</span><div><strong>Tokenise + Pad</strong><br>Prompt → int32[200] · state/actions → dim 32</div></div>
+          <div class="pt-arrow">↓</div>
+          <div class="pt-step"><span class="pt-num">7</span><div><strong>GPU batch (4, 224, 224, 3)</strong><br>images in [−1, 1] float32</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── STATUS ──────────────────────────────────────────────────────────── -->
+<section class="section">
+  <div class="container">
+    <h2>Current Status</h2>
+    <div class="status-card">
+      <div class="status-indicator running"></div>
+      <div>
+        <strong>Training in progress</strong> — pi05_baxter · run_001
+        <br>
+        <span class="status-meta">~1.6 it/s · batch_size=4 · 20,000 total steps · RTX 5090</span>
+      </div>
+      <a href="https://wandb.ai/patwardhan-saniya-indian-institute-of-technology-gandhinagar/openpi" class="btn btn-sm" target="_blank">Live W&amp;B →</a>
+    </div>
+
+    <div class="timeline">
+      <div class="tl-item done">
+        <div class="tl-dot"></div>
+        <div class="tl-content">
+          <strong>MJCF model</strong>
+          <span>Hand-written 15-DOF Baxter in MuJoCo with dynamic velocity actuators, custom collision masks, and 3 cameras</span>
+        </div>
+      </div>
+      <div class="tl-item done">
+        <div class="tl-dot"></div>
+        <div class="tl-content">
+          <strong>Demo collection</strong>
+          <span>100 successful episodes · 92% yield · P + gravity-comp controller · randomised cube positions</span>
+        </div>
+      </div>
+      <div class="tl-item done">
+        <div class="tl-dot"></div>
+        <div class="tl-content">
+          <strong>LeRobot conversion</strong>
+          <span>HDF5 → LeRobot dataset at 10 Hz · 7,700 frames · norm stats computed</span>
+        </div>
+      </div>
+      <div class="tl-item done">
+        <div class="tl-dot"></div>
+        <div class="tl-content">
+          <strong>Training config</strong>
+          <span>pi05_baxter config added to openpi · LoRA adapters · AdamW cosine decay</span>
+        </div>
+      </div>
+      <div class="tl-item active">
+        <div class="tl-dot"></div>
+        <div class="tl-content">
+          <strong>LoRA fine-tuning</strong>
+          <span>Running now · ~20,000 steps · checkpoints at 5k / 10k / 20k</span>
+        </div>
+      </div>
+      <div class="tl-item pending">
+        <div class="tl-dot"></div>
+        <div class="tl-content">
+          <strong>Inference evaluation</strong>
+          <span>Serve checkpoint · run in MuJoCo viewer · measure success rate vs scripted baseline (92%)</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── FOOTER ──────────────────────────────────────────────────────────── -->
+<footer class="footer">
+  <div class="container">
+    <p>
+      Built with <a href="https://github.com/Physical-Intelligence/openpi">openpi</a> ·
+      <a href="https://mujoco.org">MuJoCo</a> ·
+      <a href="https://github.com/huggingface/lerobot">LeRobot</a>
+    </p>
+    <p class="footer-small">
+      Human–Robot Collaboration &amp; Vision Lab · IIT Gandhinagar · 2026
+    </p>
+  </div>
+</footer>
+
+</body>
+</html>

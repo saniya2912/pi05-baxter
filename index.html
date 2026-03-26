@@ -25,11 +25,11 @@
       <span>Robot Intelligence Lab</span>
     </div>
     <div class="links">
-      <a href="https://github.com/hrcvla" class="btn btn-outline">
+      <a href="https://github.com/saniya2912/pi05-baxter" class="btn btn-outline">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.44 9.8 8.2 11.39.6.11.82-.26.82-.58v-2.03c-3.34.72-4.04-1.61-4.04-1.61-.54-1.38-1.33-1.75-1.33-1.75-1.09-.74.08-.73.08-.73 1.2.08 1.84 1.24 1.84 1.24 1.07 1.83 2.8 1.3 3.49 1 .11-.78.42-1.3.76-1.6-2.67-.3-5.47-1.33-5.47-5.93 0-1.31.47-2.38 1.24-3.22-.12-.3-.54-1.52.12-3.18 0 0 1.01-.32 3.3 1.23a11.5 11.5 0 0 1 3-.4c1.02.005 2.04.138 3 .4 2.28-1.55 3.29-1.23 3.29-1.23.66 1.66.24 2.88.12 3.18.77.84 1.23 1.91 1.23 3.22 0 4.61-2.81 5.63-5.48 5.92.43.37.81 1.1.81 2.22v3.29c0 .32.22.7.83.58C20.57 21.8 24 17.3 24 12c0-6.63-5.37-12-12-12z"/></svg>
         GitHub
       </a>
-      <a href="https://wandb.ai/patwardhan-saniya-indian-institute-of-technology-gandhinagar/openpi" class="btn btn-outline">
+      <a href="https://wandb.ai/patwardhan-saniya-indian-institute-of-technology-gandhinagar/openpi/runs/txq68i0g" class="btn btn-outline">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg>
         W&amp;B Logs
       </a>
@@ -87,7 +87,6 @@
       Vision-Language-Action model — on our simulated demonstrations using
       Low-Rank Adaptation (LoRA) to fit within a single 32 GB GPU.
     </p>
-
     <div class="pipeline">
       <div class="pipe-step">
         <div class="pipe-icon">🎮</div>
@@ -115,6 +114,13 @@
         <h3>LoRA Fine-tuning</h3>
         <p>π0.5-base weights frozen. LoRA adapters (rank 16) trained on PaliGemma + action expert via flow matching.</p>
         <code>train.py pi05_baxter</code>
+      </div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-step">
+        <div class="pipe-icon">🤖</div>
+        <h3>Inference</h3>
+        <p>WebSocket policy server serves action chunks. MuJoCo client executes each at 10 Hz with 50 physics substeps.</p>
+        <code>run_inference.py</code>
       </div>
     </div>
   </div>
@@ -198,10 +204,8 @@
         <tr><td>Task object</td><td>5 cm red cube, mass 50 g, free joint</td></tr>
         <tr><td>Task</td><td>Push cube ≥ 6 cm in −Y (success criterion)</td></tr>
         <tr><td>Cube start position</td><td>(0.65, −0.20 ± 0.04, 0.525) m</td></tr>
-        <tr><td>Collision handling</td><td>Arm passes through table; arm–cube contact physical</td></tr>
       </table>
     </div>
-
     <h3 class="subsection-title">Episode Phases</h3>
     <div class="phase-list">
       <div class="phase">
@@ -226,7 +230,7 @@
 <!-- ─── TRAINING ─────────────────────────────────────────────────────────── -->
 <section class="section section-dark">
   <div class="container">
-    <h2>Training Configuration</h2>
+    <h2>Training Results</h2>
     <div class="two-col">
       <div class="col-text">
         <h3>LoRA Fine-tuning</h3>
@@ -234,12 +238,7 @@
           Full fine-tuning of π0.5 requires ~50 GB of GPU memory. Using LoRA
           (rank 16) on both PaliGemma and the action expert reduces peak usage
           to ~17 GB — fitting within a single RTX 5090 (32 GB).
-        </p>
-        <p>
-          Only ~30–50 million of the 3 billion parameters are updated.
-          The base model weights remain frozen; LoRA adapter matrices
-          (A ∈ ℝ<sup>d×r</sup>, B ∈ ℝ<sup>r×d</sup>, r=16) are inserted at
-          every attention projection and trained with AdamW.
+          Only ~30–50M of 3B parameters are updated.
         </p>
         <h3>Hyperparameters</h3>
         <div class="hp-grid">
@@ -258,22 +257,225 @@
         </div>
       </div>
       <div class="col-text">
-        <h3>Data Pipeline</h3>
-        <div class="pipeline-text">
-          <div class="pt-step"><span class="pt-num">1</span><div><strong>HDF5 demos</strong><br>100 episodes × ~761 steps @ 100 Hz</div></div>
-          <div class="pt-arrow">↓</div>
-          <div class="pt-step"><span class="pt-num">2</span><div><strong>LeRobot dataset</strong><br>Downsampled to 10 Hz · LIBERO key convention</div></div>
-          <div class="pt-arrow">↓</div>
-          <div class="pt-step"><span class="pt-num">3</span><div><strong>RepackTransform</strong><br>image → observation/image · task → prompt</div></div>
-          <div class="pt-arrow">↓</div>
-          <div class="pt-step"><span class="pt-num">4</span><div><strong>LiberoInputs</strong><br>Build image dict · zero-pad missing camera</div></div>
-          <div class="pt-arrow">↓</div>
-          <div class="pt-step"><span class="pt-num">5</span><div><strong>Normalise</strong><br>Quantile z-score from precomputed stats</div></div>
-          <div class="pt-arrow">↓</div>
-          <div class="pt-step"><span class="pt-num">6</span><div><strong>Tokenise + Pad</strong><br>Prompt → int32[200] · state/actions → dim 32</div></div>
-          <div class="pt-arrow">↓</div>
-          <div class="pt-step"><span class="pt-num">7</span><div><strong>GPU batch (4, 224, 224, 3)</strong><br>images in [−1, 1] float32</div></div>
+        <h3>Completed Run — run_001</h3>
+        <div class="result-grid">
+          <div class="result-card">
+            <span class="result-num">67.4%</span>
+            <span class="result-label">loss reduction</span>
+            <span class="result-sub">0.1005 → 0.0328</span>
+          </div>
+          <div class="result-card">
+            <span class="result-num">0.0285</span>
+            <span class="result-label">best loss</span>
+            <span class="result-sub">step 13,100</span>
+          </div>
+          <div class="result-card">
+            <span class="result-num">3 / 198</span>
+            <span class="result-label">gradient clips</span>
+            <span class="result-sub">only in first 1k steps</span>
+          </div>
+          <div class="result-card">
+            <span class="result-num">0.404%</span>
+            <span class="result-label">param drift</span>
+            <span class="result-sub">base model intact</span>
+          </div>
         </div>
+        <h3 style="margin-top:1.5rem">Loss by Phase</h3>
+        <div class="loss-chart">
+          <div class="loss-bar-row">
+            <span class="loss-phase">0–5k steps</span>
+            <div class="loss-bar-wrap"><div class="loss-bar" style="width:100%"></div></div>
+            <span class="loss-val">0.0559</span>
+          </div>
+          <div class="loss-bar-row">
+            <span class="loss-phase">5–10k steps</span>
+            <div class="loss-bar-wrap"><div class="loss-bar" style="width:62.6%"></div></div>
+            <span class="loss-val">0.0350</span>
+          </div>
+          <div class="loss-bar-row">
+            <span class="loss-phase">10–15k steps</span>
+            <div class="loss-bar-wrap"><div class="loss-bar" style="width:57.4%"></div></div>
+            <span class="loss-val">0.0321</span>
+          </div>
+          <div class="loss-bar-row">
+            <span class="loss-phase">15–20k steps</span>
+            <div class="loss-bar-wrap"><div class="loss-bar converged" style="width:55.6%"></div></div>
+            <span class="loss-val">0.0311</span>
+          </div>
+        </div>
+        <p class="note">Converged at step ~13,000. Final 5k steps: loss Δ = 0.001, param drift = +0.05 (fully memorised task).</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── INFERENCE ────────────────────────────────────────────────────────── -->
+<section class="section">
+  <div class="container">
+    <h2>Inference Results</h2>
+    <p class="section-desc">
+      Fine-tuned checkpoint (step 19,999) served via WebSocket policy server.
+      MuJoCo client runs at 10 Hz, replanning every 5 actions. Each action
+      executed for 50 physics steps (0.1 s) to match training cadence.
+    </p>
+
+    <!-- Video placeholder -->
+    <div class="video-section">
+      <div class="video-wrap">
+        <div class="video-placeholder">
+          <div class="vp-icon">▶</div>
+          <p>Inference rollout video</p>
+          <code>python run_inference.py --save-video</code>
+        </div>
+      </div>
+    </div>
+
+    <!-- Inference stats -->
+    <div class="two-col" style="margin-top:2.5rem">
+      <div class="col-text">
+        <h3>Episode Summary</h3>
+        <div class="hp-grid">
+          <div class="hp-row"><span>Duration</span><code>15.0 s (150 actions)</code></div>
+          <div class="hp-row"><span>Checkpoint</span><code>run_001 / step 19999</code></div>
+          <div class="hp-row"><span>Prompt</span><code>"move the cube to the right"</code></div>
+          <div class="hp-row"><span>Replan every</span><code>5 actions</code></div>
+          <div class="hp-row"><span>Mean |action|</span><code>0.182 rad/s</code></div>
+          <div class="hp-row"><span>Max |action|</span><code>1.033 rad/s (s1)</code></div>
+          <div class="hp-row"><span>Total displacement</span><code>5.91 rad</code></div>
+          <div class="hp-row"><span>Most active joint</span><code>right_s1 (shoulder lift)</code></div>
+        </div>
+
+        <h3 style="margin-top:1.5rem">Motion Activity Over Time</h3>
+        <div class="loss-chart">
+          <div class="loss-bar-row">
+            <span class="loss-phase">0–3 s</span>
+            <div class="loss-bar-wrap"><div class="loss-bar infer-bar" style="width:59.6%"></div></div>
+            <span class="loss-val">0.128</span>
+          </div>
+          <div class="loss-bar-row">
+            <span class="loss-phase">3–6 s</span>
+            <div class="loss-bar-wrap"><div class="loss-bar infer-bar" style="width:81.2%"></div></div>
+            <span class="loss-val">0.175</span>
+          </div>
+          <div class="loss-bar-row">
+            <span class="loss-phase">6–9 s</span>
+            <div class="loss-bar-wrap"><div class="loss-bar infer-bar" style="width:82.6%"></div></div>
+            <span class="loss-val">0.178</span>
+          </div>
+          <div class="loss-bar-row">
+            <span class="loss-phase">9–12 s</span>
+            <div class="loss-bar-wrap"><div class="loss-bar infer-bar" style="width:98.9%"></div></div>
+            <span class="loss-val">0.213</span>
+          </div>
+          <div class="loss-bar-row">
+            <span class="loss-phase">12–15 s</span>
+            <div class="loss-bar-wrap"><div class="loss-bar infer-bar" style="width:100%"></div></div>
+            <span class="loss-val">0.216</span>
+          </div>
+        </div>
+        <p class="note">Mean |action| (rad/s). Activity ramps up monotonically — robot builds speed as it commits to the push.</p>
+      </div>
+
+      <div class="col-text">
+        <h3>Per-Joint Action Magnitude</h3>
+        <div class="joint-chart">
+          <div class="joint-row">
+            <span class="joint-name">s0 <small>shoulder rotate</small></span>
+            <div class="joint-bar-wrap"><div class="joint-bar" style="width:31.5%"></div></div>
+            <span class="joint-val">0.192</span>
+          </div>
+          <div class="joint-row dominant">
+            <span class="joint-name">s1 <small>shoulder lift</small></span>
+            <div class="joint-bar-wrap"><div class="joint-bar dominant-bar" style="width:100%"></div></div>
+            <span class="joint-val">0.610 ★</span>
+          </div>
+          <div class="joint-row">
+            <span class="joint-name">e0 <small>elbow rotate</small></span>
+            <div class="joint-bar-wrap"><div class="joint-bar" style="width:16.4%"></div></div>
+            <span class="joint-val">0.100</span>
+          </div>
+          <div class="joint-row">
+            <span class="joint-name">e1 <small>elbow flex</small></span>
+            <div class="joint-bar-wrap"><div class="joint-bar" style="width:45.9%"></div></div>
+            <span class="joint-val">0.280</span>
+          </div>
+          <div class="joint-row">
+            <span class="joint-name">w0 <small>wrist rotate</small></span>
+            <div class="joint-bar-wrap"><div class="joint-bar" style="width:2.5%"></div></div>
+            <span class="joint-val">0.016</span>
+          </div>
+          <div class="joint-row">
+            <span class="joint-name">w1 <small>wrist flex</small></span>
+            <div class="joint-bar-wrap"><div class="joint-bar" style="width:11.6%"></div></div>
+            <span class="joint-val">0.071</span>
+          </div>
+          <div class="joint-row">
+            <span class="joint-name">w2 <small>wrist roll</small></span>
+            <div class="joint-bar-wrap"><div class="joint-bar" style="width:1.0%"></div></div>
+            <span class="joint-val">0.006</span>
+          </div>
+        </div>
+        <p class="note">Wrist joints (w0–w2) correctly suppressed. The task requires gross arm sweeping, not fine wrist manipulation. The model learned this from the demos.</p>
+
+        <h3 style="margin-top:1.5rem">Joint Position Drift</h3>
+        <div class="table-wrap">
+          <table>
+            <tr><th>Joint</th><th>Start (rad)</th><th>End (rad)</th><th>Drift</th></tr>
+            <tr><td>right_s0</td><td>0.015</td><td>−0.465</td><td>−0.480</td></tr>
+            <tr class="highlight-row"><td>right_s1</td><td>−0.960</td><td>1.047</td><td><strong>+2.007</strong></td></tr>
+            <tr><td>right_e0</td><td>0.000</td><td>1.057</td><td>+1.058</td></tr>
+            <tr class="highlight-row"><td>right_e1</td><td>2.000</td><td>−0.005</td><td><strong>−2.004</strong></td></tr>
+            <tr><td>right_w0</td><td>0.000</td><td>−0.171</td><td>−0.170</td></tr>
+            <tr><td>right_w1</td><td>0.786</td><td>0.973</td><td>+0.187</td></tr>
+            <tr><td>right_w2</td><td>0.000</td><td>0.004</td><td>+0.004</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── FINDINGS ─────────────────────────────────────────────────────────── -->
+<section class="section section-dark">
+  <div class="container">
+    <h2>Key Findings</h2>
+    <div class="findings-grid">
+      <div class="finding-card">
+        <div class="finding-icon">✅</div>
+        <h3>Structured Motion</h3>
+        <p>
+          The policy produces task-relevant motion, not random noise. Shoulder and elbow
+          dominate; wrist joints are correctly suppressed. Action magnitude ramps up
+          monotonically — the model commits to the push trajectory with increasing confidence.
+        </p>
+      </div>
+      <div class="finding-card">
+        <div class="finding-icon">✅</div>
+        <h3>Clean Convergence</h3>
+        <p>
+          Loss dropped 67.4% over 20k steps. Only 3 gradient clips in 198 logged steps,
+          all in the first 1k. Param norm drifted just +0.4% — the pre-trained base model
+          is essentially intact; only the LoRA adapters changed.
+        </p>
+      </div>
+      <div class="finding-card">
+        <div class="finding-icon">⚠️</div>
+        <h3>Language Conditioning Collapse</h3>
+        <p>
+          Changing the prompt (e.g., "wave your hand") produced identical cube-push motion.
+          Fine-tuning on a single task with one prompt removes language grounding — the
+          visual scene alone drives the action. Multiple tasks with distinct outcomes would
+          be required to restore prompt sensitivity.
+        </p>
+      </div>
+      <div class="finding-card">
+        <div class="finding-icon">✅</div>
+        <h3>Efficient Fine-tuning</h3>
+        <p>
+          LoRA (rank 16) reduced GPU memory from ~50 GB (full FT) to ~17 GB, enabling
+          training on a single RTX 5090. The async checkpoint OOM bug was resolved by
+          switching to synchronous writes and closing background applications.
+        </p>
       </div>
     </div>
   </div>
@@ -282,15 +484,15 @@
 <!-- ─── STATUS ──────────────────────────────────────────────────────────── -->
 <section class="section">
   <div class="container">
-    <h2>Current Status</h2>
+    <h2>Project Status</h2>
     <div class="status-card">
-      <div class="status-indicator running"></div>
+      <div class="status-indicator done-ind"></div>
       <div>
-        <strong>Training in progress</strong> — pi05_baxter · run_001
+        <strong>Training complete</strong> — pi05_baxter · run_001 · step 19,999
         <br>
-        <span class="status-meta">~1.6 it/s · batch_size=4 · 20,000 total steps · RTX 5090</span>
+        <span class="status-meta">3.5 h · 1.6 it/s · batch_size=4 · RTX 5090 · final loss 0.0328</span>
       </div>
-      <a href="https://wandb.ai/patwardhan-saniya-indian-institute-of-technology-gandhinagar/openpi" class="btn btn-sm" target="_blank">Live W&amp;B →</a>
+      <a href="https://wandb.ai/patwardhan-saniya-indian-institute-of-technology-gandhinagar/openpi/runs/txq68i0g" class="btn btn-sm" target="_blank">W&amp;B Run →</a>
     </div>
 
     <div class="timeline">
@@ -318,22 +520,22 @@
       <div class="tl-item done">
         <div class="tl-dot"></div>
         <div class="tl-content">
-          <strong>Training config</strong>
-          <span>pi05_baxter config added to openpi · LoRA adapters · AdamW cosine decay</span>
+          <strong>LoRA fine-tuning</strong>
+          <span>20,000 steps · loss 0.1005 → 0.0328 (67.4%) · converged at step ~13k · checkpoint 19999</span>
+        </div>
+      </div>
+      <div class="tl-item done">
+        <div class="tl-dot"></div>
+        <div class="tl-content">
+          <strong>Inference</strong>
+          <span>WebSocket server + MuJoCo client · structured task-relevant motion · 5.91 rad displacement over 15 s</span>
         </div>
       </div>
       <div class="tl-item active">
         <div class="tl-dot"></div>
         <div class="tl-content">
-          <strong>LoRA fine-tuning</strong>
-          <span>Running now · ~20,000 steps · checkpoints at 5k / 10k / 20k</span>
-        </div>
-      </div>
-      <div class="tl-item pending">
-        <div class="tl-dot"></div>
-        <div class="tl-content">
-          <strong>Inference evaluation</strong>
-          <span>Serve checkpoint · run in MuJoCo viewer · measure success rate vs scripted baseline (92%)</span>
+          <strong>Quantitative evaluation</strong>
+          <span>Measure success rate vs scripted baseline (92%) across randomised cube positions</span>
         </div>
       </div>
     </div>
@@ -349,7 +551,7 @@
       <a href="https://github.com/huggingface/lerobot">LeRobot</a>
     </p>
     <p class="footer-small">
-      Human–Robot Collaboration &amp; Vision Lab · IIT Gandhinagar · 2026
+      Robot Intelligence Lab · Imperial College London · 2026
     </p>
   </div>
 </footer>

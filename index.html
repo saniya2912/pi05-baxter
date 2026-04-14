@@ -306,6 +306,93 @@
         <p class="note">Converged at step ~13,000. Final 5k steps: loss Δ = 0.001, param drift = +0.05 (fully memorised task).</p>
       </div>
     </div>
+
+    <!-- run_002 multitask -->
+    <div class="run-divider">
+      <span>run_002 — Multi-Task Fine-tuning</span>
+    </div>
+    <div class="two-col">
+      <div class="col-text">
+        <h3>Three-Task Dataset</h3>
+        <p>
+          Motivated by the language-conditioning collapse observed in run_001
+          (single-task), run_002 trains on three distinct tasks so the model
+          must use the language prompt to discriminate between behaviours.
+        </p>
+        <div class="table-wrap" style="margin-top:1rem">
+          <table>
+            <tr><th>Task prompt</th><th>Episodes</th><th>Frames</th></tr>
+            <tr><td>"move the cube to the right"</td><td>100</td><td>~7,700</td></tr>
+            <tr><td>"push the block to the front"</td><td>100</td><td>~10,600</td></tr>
+            <tr><td>"wave your hand"</td><td>30</td><td>~5,700</td></tr>
+            <tr><td><strong>Total</strong></td><td><strong>230</strong></td><td><strong>24,005</strong></td></tr>
+          </table>
+        </div>
+        <h3 style="margin-top:1.5rem">Hyperparameter Changes</h3>
+        <div class="hp-grid">
+          <div class="hp-row"><span>Base weights</span><code>pi05_base (not run_001)</code></div>
+          <div class="hp-row"><span>LoRA rank</span><code>32 (doubled)</code></div>
+          <div class="hp-row"><span>Total steps</span><code>40,000 (3× data)</code></div>
+          <div class="hp-row"><span>Decay steps</span><code>40,000</code></div>
+          <div class="hp-row"><span>Batch size</span><code>4</code></div>
+          <div class="hp-row"><span>Peak LR</span><code>2e-4</code></div>
+          <div class="hp-row"><span>Prompt source</span><code>prompt_from_task=True</code></div>
+          <div class="hp-row"><span>Duration</span><code>~7 h · RTX 5090</code></div>
+        </div>
+      </div>
+      <div class="col-text">
+        <h3>Completed Run — run_002</h3>
+        <div class="result-grid">
+          <div class="result-card">
+            <span class="result-num">0.032</span>
+            <span class="result-label">final loss</span>
+            <span class="result-sub">step 39,900</span>
+          </div>
+          <div class="result-card">
+            <span class="result-num">0.12–0.13</span>
+            <span class="result-label">grad norm</span>
+            <span class="result-sub">stable throughout</span>
+          </div>
+          <div class="result-card">
+            <span class="result-num">3</span>
+            <span class="result-label">tasks learned</span>
+            <span class="result-sub">language-conditioned</span>
+          </div>
+          <div class="result-card">
+            <span class="result-num">40k</span>
+            <span class="result-label">steps</span>
+            <span class="result-sub">4 checkpoints saved</span>
+          </div>
+        </div>
+        <h3 style="margin-top:1.5rem">Loss by Phase</h3>
+        <div class="loss-chart">
+          <div class="loss-bar-row">
+            <span class="loss-phase">0–10k steps</span>
+            <div class="loss-bar-wrap"><div class="loss-bar" style="width:100%"></div></div>
+            <span class="loss-val">~0.055</span>
+          </div>
+          <div class="loss-bar-row">
+            <span class="loss-phase">10–20k steps</span>
+            <div class="loss-bar-wrap"><div class="loss-bar" style="width:65%"></div></div>
+            <span class="loss-val">~0.036</span>
+          </div>
+          <div class="loss-bar-row">
+            <span class="loss-phase">20–30k steps</span>
+            <div class="loss-bar-wrap"><div class="loss-bar" style="width:60%"></div></div>
+            <span class="loss-val">~0.033</span>
+          </div>
+          <div class="loss-bar-row">
+            <span class="loss-phase">30–40k steps</span>
+            <div class="loss-bar-wrap"><div class="loss-bar converged" style="width:58%"></div></div>
+            <span class="loss-val">0.032</span>
+          </div>
+        </div>
+        <p class="note">Stable convergence across all 40k steps. Grad norm 0.12–0.13 with no clips — training remained well-conditioned throughout.</p>
+        <div style="margin-top:1rem">
+          <a href="https://wandb.ai/patwardhan-saniya-indian-institute-of-technology-gandhinagar/openpi/runs/6fhj3ygn" class="btn btn-sm" target="_blank">W&amp;B run_002 →</a>
+        </div>
+      </div>
+    </div>
   </div>
 </section>
 
@@ -434,6 +521,122 @@
   </div>
 </section>
 
+<!-- ─── MULTITASK INFERENCE ──────────────────────────────────────────────── -->
+<section class="section section-dark">
+  <div class="container">
+    <h2>Multi-Task Inference</h2>
+    <p class="section-desc">
+      run_002 checkpoint (step 39,999) served via the same WebSocket server.
+      All three language prompts produce visually distinct robot behaviours,
+      confirming that language conditioning is restored in the multi-task model.
+    </p>
+    <div class="table-wrap">
+      <table>
+        <tr><th>Prompt</th><th>Observed behaviour</th><th>Distinct from others?</th></tr>
+        <tr><td><code>"move the cube to the right"</code></td><td>Right arm sweeps in −Y, contacts and pushes cube laterally</td><td>✅ Yes</td></tr>
+        <tr><td><code>"wave your hand"</code></td><td>Right arm performs oscillating shoulder motion, no object contact</td><td>✅ Yes</td></tr>
+        <tr><td><code>"push the block to the front"</code></td><td>Right arm extends forward, pushes cube away from robot base</td><td>✅ Yes</td></tr>
+      </table>
+    </div>
+    <div class="stats-row" style="margin-top:2rem">
+      <div class="stat"><span class="stat-num">3 / 3</span><span class="stat-label">tasks distinguished</span></div>
+      <div class="stat"><span class="stat-num">39,999</span><span class="stat-label">checkpoint step</span></div>
+      <div class="stat"><span class="stat-num">50</span><span class="stat-label">physics substeps / action</span></div>
+      <div class="stat"><span class="stat-num">5</span><span class="stat-label">replan interval</span></div>
+    </div>
+    <p class="note" style="margin-top:1.5rem">
+      Inference client: <code>python mujoco_viewer/baxter_inference.py --task 0/1/2</code>.
+      The <code>--task</code> flag selects the prompt without editing the file.
+    </p>
+  </div>
+</section>
+
+<!-- ─── PICK DEMO ─────────────────────────────────────────────────────────── -->
+<section class="section">
+  <div class="container">
+    <h2>Baxter Gripper &amp; Scripted Pick Demo</h2>
+    <p class="section-desc">
+      To support future pick-and-place VLA inference, the Baxter MJCF was extended
+      with full Rethink Electric Parallel-Jaw Grippers and a scripted 4-phase pick
+      demo was developed using Damped Least-Squares Jacobian IK.
+    </p>
+    <div class="two-col">
+      <div class="col-text">
+        <h3>Gripper MJCF</h3>
+        <p>The original model used placeholder spheres. The new model adds the full
+          Rethink gripper kinematic chain — connector plate, gripper base, and two
+          finger links with slide joints in the gripper-Y axis.</p>
+        <div class="hp-grid">
+          <div class="hp-row"><span>Finger travel</span><code>±32 mm</code></div>
+          <div class="hp-row"><span>Gripper actuators</span><code>position (kp=1000)</code></div>
+          <div class="hp-row"><span>Open position</span><code>±20.8 mm</code></div>
+          <div class="hp-row"><span>Closed position</span><code>±11.5 mm</code></div>
+          <div class="hp-row"><span>Collision class</span><code>contype=2 / conaffinity=5</code></div>
+          <div class="hp-row"><span>File</span><code>models/baxter_withgripper.xml</code></div>
+        </div>
+
+        <h3 style="margin-top:1.5rem">Pick Sequence</h3>
+        <div class="phase-list">
+          <div class="phase">
+            <span class="phase-label">Phase 0</span>
+            <p>Settle simulation, open gripper.</p>
+          </div>
+          <div class="phase">
+            <span class="phase-label">Phase 1</span>
+            <p>Joint-space P control to Q_REACH — orients fingers horizontally (closing in ±Y) with ~20 mm clearance above table.</p>
+          </div>
+          <div class="phase">
+            <span class="phase-label">Phase 2</span>
+            <p>Cartesian DLS IK centers grip site over cube in X/Y. Fingers straddle cube faces symmetrically.</p>
+          </div>
+          <div class="phase">
+            <span class="phase-label">Phase 3</span>
+            <p>Close gripper — fingers contact cube faces in ±Y.</p>
+          </div>
+          <div class="phase">
+            <span class="phase-label">Phase 4</span>
+            <p>Cartesian DLS IK lifts 22 cm. Cube rises with arm — pick successful.</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-text">
+        <h3>IK Design</h3>
+        <p>
+          Pure pseudoinverse IK fails near joint limits on large motions. The pick
+          demo uses <strong>Damped Least-Squares (DLS) IK</strong> with a null-space
+          term that keeps the arm near a reference configuration:
+        </p>
+        <div class="math-block">
+          J<sub>dls</sub> = Jᵀ (JJᵀ + λ²I)⁻¹<br>
+          q̇ = J<sub>dls</sub> · K<sub>p</sub> · e<sub>cart</sub><br>
+          &nbsp;&nbsp;&nbsp;&nbsp;+ (I − J<sub>dls</sub>J) · K<sub>null</sub> · (q<sub>ref</sub> − q)
+        </div>
+        <div class="hp-grid" style="margin-top:1rem">
+          <div class="hp-row"><span>DLS damping λ</span><code>0.05</code></div>
+          <div class="hp-row"><span>Cartesian gain K<sub>p</sub></span><code>5.0</code></div>
+          <div class="hp-row"><span>Null-space gain</span><code>2.0</code></div>
+          <div class="hp-row"><span>Velocity limit</span><code>±1.5 rad/s</code></div>
+          <div class="hp-row"><span>Substeps</span><code>8 per viewer sync</code></div>
+        </div>
+        <h3 style="margin-top:1.5rem">Gripper Orientation Key Insight</h3>
+        <p>
+          The w2 wrist-roll joint was swept analytically to find the configuration
+          where the gripper Y-axis (finger-closing direction) is nearly horizontal
+          (z-component ≈ 0.005). Without this, the fingers close diagonally and the
+          cube slips vertically out of the grip.
+        </p>
+        <div class="hp-grid">
+          <div class="hp-row"><span>Q_REACH w2</span><code>−1.78 rad</code></div>
+          <div class="hp-row"><span>Gripper Y-axis</span><code>[0.06, 1.00, 0.005]</code></div>
+          <div class="hp-row"><span>l_tip open Y</span><code>−0.259 m</code></div>
+          <div class="hp-row"><span>r_tip open Y</span><code>−0.355 m</code></div>
+          <div class="hp-row"><span>Cube Y-span</span><code>[−0.325, −0.275] m</code></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
 <!-- ─── FINDINGS ─────────────────────────────────────────────────────────── -->
 <section class="section section-dark">
   <div class="container">
@@ -458,13 +661,14 @@
         </p>
       </div>
       <div class="finding-card">
-        <div class="finding-icon">⚠️</div>
-        <h3>Language Conditioning Collapse</h3>
+        <div class="finding-icon">⚠️→✅</div>
+        <h3>Language Conditioning Collapse → Resolved</h3>
         <p>
-          Changing the prompt (e.g., "wave your hand") produced identical cube-push motion.
-          Fine-tuning on a single task with one prompt removes language grounding — the
-          visual scene alone drives the action. Multiple tasks with distinct outcomes would
-          be required to restore prompt sensitivity.
+          In run_001, changing the prompt (e.g., "wave your hand") produced identical
+          cube-push motion — the visual scene alone drove the action. run_002 addresses
+          this directly by training on three tasks with distinct behaviours, forcing the
+          model to use the language prompt to discriminate. With 230 demos across three
+          prompts, language grounding is restored.
         </p>
       </div>
       <div class="finding-card">
@@ -492,6 +696,15 @@
         <span class="status-meta">3.5 h · 1.6 it/s · batch_size=4 · RTX 5090 · final loss 0.0328</span>
       </div>
       <a href="https://wandb.ai/patwardhan-saniya-indian-institute-of-technology-gandhinagar/openpi/runs/txq68i0g" class="btn btn-sm" target="_blank">W&amp;B Run →</a>
+    </div>
+    <div class="status-card">
+      <div class="status-indicator done-ind"></div>
+      <div>
+        <strong>Multi-task training complete</strong> — pi05_baxter_multitask · run_002 · step 39,999
+        <br>
+        <span class="status-meta">~7 h · 1.6 it/s · batch_size=4 · RTX 5090 · 3 tasks · 230 demos · final loss 0.0321</span>
+      </div>
+      <a href="https://wandb.ai/patwardhan-saniya-indian-institute-of-technology-gandhinagar/openpi/runs/6fhj3ygn" class="btn btn-sm" target="_blank">W&amp;B Run →</a>
     </div>
 
     <div class="timeline">
@@ -530,11 +743,39 @@
           <span>WebSocket server + MuJoCo client · structured task-relevant motion · 5.91 rad displacement over 15 s</span>
         </div>
       </div>
+      <div class="tl-item done">
+        <div class="tl-dot"></div>
+        <div class="tl-content">
+          <strong>Multi-task demo collection</strong>
+          <span>100 × "push to front" + 30 × "wave your hand" scripted demos · 230 total episodes · 24,005 frames</span>
+        </div>
+      </div>
+      <div class="tl-item done">
+        <div class="tl-dot"></div>
+        <div class="tl-content">
+          <strong>Multi-task LoRA fine-tuning — run_002</strong>
+          <span>40,000 steps · 3 tasks · LoRA rank 32 · final loss 0.032 · stable grad norm 0.12–0.13 · ~7 h on RTX 5090</span>
+        </div>
+      </div>
+      <div class="tl-item done">
+        <div class="tl-dot"></div>
+        <div class="tl-content">
+          <strong>Multi-task inference &amp; evaluation</strong>
+          <span>All 3 prompts verified in MuJoCo — distinct behaviours confirmed. WebSocket client with per-task prompt switching via CLI.</span>
+        </div>
+      </div>
+      <div class="tl-item done">
+        <div class="tl-dot"></div>
+        <div class="tl-content">
+          <strong>Baxter gripper MJCF + scripted pick demo</strong>
+          <span>Full Rethink parallel-jaw gripper added to MJCF. DLS Jacobian IK + null-space centering achieves cube pick &amp; lift.</span>
+        </div>
+      </div>
       <div class="tl-item active">
         <div class="tl-dot"></div>
         <div class="tl-content">
-          <strong>Quantitative evaluation</strong>
-          <span>Measure success rate vs scripted baseline (92%) across randomised cube positions</span>
+          <strong>VLA inference with grippers</strong>
+          <span>Run pi05_baxter_multitask inference on the full gripper model — close the loop between language, vision, and manipulation.</span>
         </div>
       </div>
     </div>

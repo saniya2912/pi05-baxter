@@ -20,6 +20,12 @@
       colour-conditioned pick-and-place benchmark in MuJoCo simulation,
       using LoRA fine-tuning on scripted demonstrations.
     </p>
+    <p class="subtitle" style="margin-top:0.5rem">
+      <strong>Latest:</strong> the pipeline is being extended to two further embodiments
+      (Franka, G1), a closed-loop VLM planner for goal-directed rearrangement, and a
+      physical Baxter deployment — see <a href="#crossembodiment">Cross-Embodiment</a>
+      and <a href="#realrobot">Real Robot</a> below.
+    </p>
     <div class="authors">
       <span>Saniya Patwardhan</span>
       <span class="sep">·</span>
@@ -62,6 +68,8 @@
     <a href="#execution">Execution</a>
     <a href="#method">Method</a>
     <a href="#vlm">VLM Stack</a>
+    <a href="#crossembodiment">Cross-Embodiment</a>
+    <a href="#realrobot">Real Robot</a>
   </div>
 </nav>
 
@@ -513,39 +521,168 @@
   <div class="container">
     <h2>VLM Stack</h2>
     <p class="section-desc">
-      Two VLM components sit on top of the low-level policy: a <strong>task planner</strong>
-      that decomposes a goal scene into an ordered task list, and a <strong>task monitor</strong>
-      that verifies step completion in real time.
+      A Gemma-3-12B planner sits on top of the low-level policy, converting a goal image
+      into an ordered sequence of manipulation primitives and closing the loop with a
+      goal-check / re-plan cycle. This design was arrived at after an earlier pilot
+      (GroundingDINO detection vs. free-form Gemma monitoring on a real-world sorting
+      task) showed that Gemma's structured, multi-object output was unreliable — the
+      per-block querying strategy below sidesteps that failure mode directly.
     </p>
 
     <div class="vlm-grid">
       <div class="vlm-card">
         <div class="vlm-icon">🗺️</div>
-        <h3>VLM Task Planner</h3>
+        <h3>Per-Block Task Planner</h3>
         <p class="vlm-model">Gemma-3-12B-IT</p>
-        <p>Receives the current scene image and a goal scene image. Identifies which blocks
-        need to move and in which order, producing a JSON task list that is passed to the
-        low-level pick-and-place policy one task at a time.</p>
+        <p>Receives the current scene image and a goal scene image, and queries the model
+        <strong>once per block colour</strong> rather than once for the whole scene —
+        each query is restricted to a single object with a strict two-line
+        (<code>current: near/far</code> / <code>goal: near/far</code>) answer format.
+        This avoids the multi-object binding errors that a single combined query produced
+        during earlier testing. Mismatched blocks are appended to an ordered primitive list.</p>
         <div class="vlm-detail">
-          <div class="hp-row"><span>Input</span><code>current + goal images</code></div>
-          <div class="hp-row"><span>Output</span><code>ordered JSON task list</code></div>
-          <div class="hp-row"><span>Queried</span><code>once per scene</code></div>
+          <div class="hp-row"><span>Input</span><code>current + goal images, per colour</code></div>
+          <div class="hp-row"><span>Output</span><code>ordered primitive list</code></div>
+          <div class="hp-row"><span>Goal space</span><code>2³ = 8 near/far configurations</code></div>
         </div>
       </div>
 
       <div class="vlm-card">
-        <div class="vlm-icon">👁️</div>
-        <h3>VLM Task Monitor</h3>
-        <p class="vlm-model">Gemma-3-12B-IT + GroundingDINO</p>
-        <p>Two-stage pipeline running live during each task execution. GroundingDINO
-        detects named objects; Gemma verifies whether the current step goal is met
-        by comparing current and reference frames.</p>
+        <div class="vlm-icon">🔁</div>
+        <h3>Closed-Loop Goal Checking</h3>
+        <p class="vlm-model">Gemma-3-12B-IT</p>
+        <p>A second, independent yes/no query checks whether all three blocks already
+        match the goal — used both before planning starts and after every executed
+        primitive. If the goal isn't met, the scene is re-rendered and the
+        plan → execute → check cycle repeats (up to 3 rounds). This is the mechanism
+        that will detect and react to a human repositioning a block mid-task in the
+        planned collective-task evaluation.</p>
         <div class="vlm-detail">
-          <div class="hp-row"><span>Camera</span><code>RealSense D435</code></div>
-          <div class="hp-row"><span>Query rate</span><code>every 10 steps</code></div>
-          <div class="hp-row"><span>Output</span><code>YES / NO + reasoning</code></div>
-          <div class="hp-row"><span>Detection threshold</span><code>0.40 box · 0.25 text</code></div>
+          <div class="hp-row"><span>Check</span><code>independent yes/no query</code></div>
+          <div class="hp-row"><span>Trigger</span><code>after every primitive</code></div>
+          <div class="hp-row"><span>Status</span><code>implemented · quantitative eval pending</code></div>
         </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── CROSS-EMBODIMENT ──────────────────────────────────────────────────── -->
+<section class="section section-dark" id="crossembodiment">
+  <div class="container">
+    <h2>Cross-Embodiment Generalisation</h2>
+    <p class="section-desc">
+      Extending the same fine-tuning pipeline to two further embodiments — Franka Emika
+      Panda and Unitree G1 (single arm) — to test whether a <strong>single policy trained
+      jointly across all three robots</strong> transfers skill positively or negatively
+      relative to three independent solo policies. Same table, same six primitives, same
+      scripted DLS demonstration pipeline; only the kinematic chain and reach margins differ.
+    </p>
+
+    <div class="frame-grid" style="grid-template-columns:repeat(3,1fr)">
+      <figure>
+        <img src="assets/cross_embodiment/baxter_twoblocks.png" alt="Baxter tabletop scene" />
+        <figcaption>Baxter (existing)</figcaption>
+      </figure>
+      <figure>
+        <img src="assets/cross_embodiment/franka_twoblocks.png" alt="Franka tabletop scene" />
+        <figcaption>Franka Emika Panda (new)</figcaption>
+      </figure>
+      <figure>
+        <img src="assets/cross_embodiment/g1_twoblocks.png" alt="G1 tabletop scene" />
+        <figcaption>Unitree G1, right arm (new)</figcaption>
+      </figure>
+    </div>
+
+    <div class="results-layout" style="margin-top:2rem">
+      <div class="results-summary">
+        <h3>Demonstration Collection Yield</h3>
+        <div class="table-wrap" style="margin-top:0.75rem">
+          <table class="results-table">
+            <thead><tr><th>Task</th><th>Franka</th><th>G1</th></tr></thead>
+            <tbody>
+              <tr class="row-red"><td>0: red → far</td><td>28/30 (93%)</td><td>30/30 (100%)</td></tr>
+              <tr class="row-red"><td>1: red → near</td><td>27/30 (90%)</td><td>30/30 (100%)</td></tr>
+              <tr class="row-blue"><td>2: blue → far</td><td>17/40 (43%)</td><td>30/30 (100%)</td></tr>
+              <tr class="row-blue"><td>3: blue → near</td><td>29/40 (73%)</td><td>— (0%, excluded)</td></tr>
+              <tr class="row-green"><td>4: green → far</td><td>25/100 (25%)</td><td>23/30 (77%)</td></tr>
+              <tr class="row-green"><td>5: green → near</td><td>2/60 (3%)</td><td>— (0%, excluded)</td></tr>
+              <tr class="total-row"><td><strong>Total</strong></td><td><strong>128 episodes</strong></td><td><strong>113 episodes</strong></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="results-summary">
+        <h3>Status</h3>
+        <div class="result-kpi-grid">
+          <div class="kpi"><span class="kpi-num">✓</span><span class="kpi-label">Scene + demo pipeline built for both robots</span></div>
+          <div class="kpi"><span class="kpi-num">✓</span><span class="kpi-label">241 success-filtered episodes collected</span></div>
+          <div class="kpi"><span class="kpi-num">✓</span><span class="kpi-label">Joint mixture-training config validated</span></div>
+          <div class="kpi"><span class="kpi-num badge badge-mid" style="font-size:1.4rem">pending</span><span class="kpi-label">Solo vs. joint training runs not yet launched</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="insight-banner" style="margin-top:1.5rem">
+      <span class="insight-icon">🔧</span>
+      <div>
+        <strong>Reach-margin methodology:</strong> most cross-embodiment failures traced to a
+        specific, fixable cause rather than a vague "embodiment difference" — G1's wrist camera
+        was mounted to the wrong parent frame, G1 self-collided against its own locked torso,
+        Franka's first pass derived an invalid grasp orientation from an unconstrained IK search,
+        and both robots hit genuine base-position reach trade-offs (G1 permanently gives up
+        blue-near/green-near at its best base position). Each was diagnosed and fixed individually.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── REAL ROBOT DEPLOYMENT ─────────────────────────────────────────────── -->
+<section class="section" id="realrobot">
+  <div class="container">
+    <h2>Real Robot Deployment</h2>
+    <p class="section-desc">
+      Moving the fine-tuned policy from MuJoCo onto a physical Baxter robot. The
+      architecture is implemented; the first physical trial has not yet been run.
+    </p>
+
+    <div class="two-col">
+      <div class="col-text">
+        <img src="assets/de_niro.png" alt="Robot DE NIRO" style="width:60%;max-width:220px;border-radius:8px;margin-bottom:1rem" />
+        <h3>Two-Machine Split</h3>
+        <p>A remote control laptop runs ROS Indigo + <code>baxter_interface</code> (Python 2.7),
+        with direct access to joint state, gripper state, and the wrist camera. A separate
+        GPU lab PC runs the policy server, with an Intel RealSense camera attached
+        <strong>directly to it</strong> for the workspace/scene view — captured locally and
+        injected into the observation, rather than routed through the laptop.</p>
+        <div class="hp-grid">
+          <div class="hp-row"><span>Control laptop</span><code>ROS Indigo · Python 2.7 · wrist cam</code></div>
+          <div class="hp-row"><span>Lab PC</span><code>π0.5 policy server · RealSense scene cam</code></div>
+          <div class="hp-row"><span>Link</span><code>WebSocket · same wire format as sim</code></div>
+          <div class="hp-row"><span>Safety</span><code>±1.5 rad/s limit · 1.0s cmd timeout · SIGINT e-stop</code></div>
+        </div>
+      </div>
+      <div class="col-diagram">
+        <div class="arch-box">
+          <div class="arch-row arch-input">
+            <div class="arch-block img-block">Wrist Cam<br><small>on robot</small></div>
+            <div class="arch-block state-block">Joint State<br><small>ROS</small></div>
+          </div>
+          <div class="arch-arrow-down">↓ websocket (control laptop → lab PC)</div>
+          <div class="arch-row arch-model">
+            <div class="arch-big paligemma">Fine-tuned π0.5<br><small>lab PC · GPU</small></div>
+          </div>
+          <div class="arch-arrow-down">↑ RealSense scene camera injected locally</div>
+          <div class="arch-arrow-down">↓ action chunk</div>
+          <div class="arch-row arch-output">
+            <div class="arch-block ctrl-block">P-controller → joint velocities<br><small>control laptop, 10 Hz</small></div>
+          </div>
+        </div>
+        <p class="video-note" style="margin-top:1rem">
+          First validation target: single-block pick-and-place (task 0, red → far —
+          the strongest simulation task, 9/10 success on <code>pos_v3</code>), evaluated
+          under the same 10-trial protocol as every simulation checkpoint above.
+        </p>
       </div>
     </div>
   </div>
@@ -563,8 +700,13 @@
       <div class="tl-item done"><div class="tl-dot"></div><div class="tl-content"><strong>pos_200k</strong><span>200k steps · 12/60 trials · 8/10 on blue→far (push-mode)</span></div></div>
       <div class="tl-item done"><div class="tl-dot"></div><div class="tl-content"><strong>pos_v2</strong><span>10&nbsp;Hz native · 11-dim state · 500k steps · 24/60 trials · 50% lift rate</span></div></div>
       <div class="tl-item done"><div class="tl-dot"></div><div class="tl-content"><strong>pos_v3</strong><span>Warm-start from v2 · 250 near-side demos/task · 200k steps · 26/60 trials (43%) · best checkpoint</span></div></div>
-      <div class="tl-item done"><div class="tl-dot"></div><div class="tl-content"><strong>VLM Planner + Monitor</strong><span>Gemma-3-12B task planner · GroundingDINO + Gemma monitor · real-time step verification</span></div></div>
+      <div class="tl-item done"><div class="tl-dot"></div><div class="tl-content"><strong>VLM Planner</strong><span>Gemma-3-12B, per-block querying + closed-loop goal-check/replan cycle · 8-configuration goal space</span></div></div>
       <div class="tl-item active"><div class="tl-dot"></div><div class="tl-content"><strong>Green block — open problem</strong><span>T4/T5 achieve 0% across all checkpoints · joint-limit workspace geometry issue</span></div></div>
+      <div class="tl-item done"><div class="tl-dot"></div><div class="tl-content"><strong>Cross-embodiment: Franka + G1 scenes &amp; demos</strong><span>128 (Franka) + 113 (G1) success-filtered episodes collected · joint mixture-training config validated</span></div></div>
+      <div class="tl-item active"><div class="tl-dot"></div><div class="tl-content"><strong>Cross-embodiment: solo vs. joint training</strong><span>Franka solo, G1 solo, and joint cross-embodiment runs not yet launched</span></div></div>
+      <div class="tl-item done"><div class="tl-dot"></div><div class="tl-content"><strong>Real-robot deployment architecture</strong><span>ROS client (control laptop) + RealSense-injecting policy server (lab PC) · same P-controller and grasp-latch logic as sim</span></div></div>
+      <div class="tl-item active"><div class="tl-dot"></div><div class="tl-content"><strong>Real-robot physical validation</strong><span>Single-block pick-and-place trial on physical Baxter — scheduled, not yet run</span></div></div>
+      <div class="tl-item active"><div class="tl-dot"></div><div class="tl-content"><strong>Human-robot collective task</strong><span>Evaluation protocol defined (planner + policy + human mid-task intervention) · trials not yet run</span></div></div>
     </div>
   </div>
 </section>

@@ -3,10 +3,24 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Fine-tuning π0.5 on Baxter — Pick-and-Place</title>
+  <title>Teaching a Robot Arm to Help, With and Without a Human</title>
   <link rel="stylesheet" href="style.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    .plain-section { padding: 4rem 0; }
+    .plain-section h2 { font-size: 1.6rem; margin-bottom: 1rem; }
+    .plain-section p { color: var(--text2); line-height: 1.7; max-width: 760px; }
+    .finding-list { list-style: none; padding: 0; margin: 1.5rem 0 0; display: grid; gap: 1rem; }
+    .finding-list li { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius, 10px); padding: 1rem 1.25rem; color: var(--text); line-height: 1.6; }
+    .finding-list b { color: var(--accent2); }
+    .video-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin-top: 1.5rem; }
+    .video-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius, 10px); overflow: hidden; }
+    .video-card video, .video-card img { display: block; width: 100%; max-height: 260px; object-fit: contain; background: #000; }
+    .video-card .caption { padding: 0.85rem 1rem; font-size: 0.85rem; color: var(--text2); line-height: 1.5; }
+    .video-card .caption b { color: var(--text); }
+    .status-note { display: inline-block; background: rgba(124,111,247,.12); border: 1px solid var(--accent); color: var(--accent2); border-radius: 6px; padding: 0.4rem 0.8rem; font-size: 0.85rem; margin-top: 1rem; }
+  </style>
 </head>
 <body>
 
@@ -14,17 +28,12 @@
 <header class="hero">
   <div class="container">
     <p class="venue">MRes Thesis · Imperial College London · Robot Intelligence Lab · 2025–2026</p>
-    <h1>Fine-tuning <span class="pi">π0.5</span> on Baxter<br>for Multi-Task Pick-and-Place</h1>
+    <h1>Teaching a Robot Arm to Help,<br>With and Without a Human</h1>
     <p class="subtitle">
-      Adapting a 3-billion-parameter Vision-Language-Action model to a 6-task
-      colour-conditioned pick-and-place benchmark in MuJoCo simulation,
-      using LoRA fine-tuning on scripted demonstrations.
-    </p>
-    <p class="subtitle" style="margin-top:0.5rem">
-      <strong>Latest:</strong> the pipeline is being extended to two further embodiments
-      (Franka, G1), a closed-loop VLM planner for goal-directed rearrangement, and a
-      physical Baxter deployment — see <a href="#crossembodiment">Cross-Embodiment</a>
-      and <a href="#realrobot">Real Robot</a> below.
+      We're adapting a general-purpose "vision-language-action" AI model — trained on
+      lots of different robots — to control one specific robot arm (Baxter), then
+      testing how far that adaptation goes: to other robot arms, to a real physical
+      robot, and to working alongside a person.
     </p>
     <div class="authors">
       <span>Saniya Patwardhan</span>
@@ -34,850 +43,139 @@
     <div class="links">
       <a href="https://github.com/saniya2912/pi0.5_mujoco.git" class="btn btn-outline" target="_blank">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.44 9.8 8.2 11.39.6.11.82-.26.82-.58v-2.03c-3.34.72-4.04-1.61-4.04-1.61-.54-1.38-1.33-1.75-1.33-1.75-1.09-.74.08-.73.08-.73 1.2.08 1.84 1.24 1.84 1.24 1.07 1.83 2.8 1.3 3.49 1 .11-.78.42-1.3.76-1.6-2.67-.3-5.47-1.33-5.47-5.93 0-1.31.47-2.38 1.24-3.22-.12-.3-.54-1.52.12-3.18 0 0 1.01-.32 3.3 1.23a11.5 11.5 0 0 1 3-.4c1.02.005 2.04.138 3 .4 2.28-1.55 3.29-1.23 3.29-1.23.66 1.66.24 2.88.12 3.18.77.84 1.23 1.91 1.23 3.22 0 4.61-2.81 5.63-5.48 5.92.43.37.81 1.1.81 2.22v3.29c0 .32.22.7.83.58C20.57 21.8 24 17.3 24 12c0-6.63-5.37-12-12-12z"/></svg>
-        GitHub
-      </a>
-      <a href="https://wandb.ai/patwardhan-saniya-indian-institute-of-technology-gandhinagar/openpi/runs/txq68i0g" class="btn btn-outline" target="_blank">
-        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg>
-        W&amp;B Logs
+        Code on GitHub
       </a>
       <a href="https://github.com/Physical-Intelligence/openpi" class="btn btn-outline" target="_blank">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm-1 7V3.5L18.5 9H13z"/></svg>
-        openpi
+        The underlying AI model (openpi)
       </a>
     </div>
 
-    <!-- Hero stats -->
     <div class="hero-stats">
-      <div class="hstat"><span class="hstat-num">43%</span><span class="hstat-label">best trial success</span></div>
+      <div class="hstat"><span class="hstat-num">3</span><span class="hstat-label">robot arms tested</span></div>
       <div class="hstat-div"></div>
-      <div class="hstat"><span class="hstat-num">6</span><span class="hstat-label">manipulation tasks</span></div>
+      <div class="hstat"><span class="hstat-num">1</span><span class="hstat-label">real physical robot</span></div>
       <div class="hstat-div"></div>
-      <div class="hstat"><span class="hstat-num">5</span><span class="hstat-label">checkpoints evaluated</span></div>
-      <div class="hstat-div"></div>
-      <div class="hstat"><span class="hstat-num">900+</span><span class="hstat-label">total trials</span></div>
+      <div class="hstat"><span class="hstat-num">54%</span><span class="hstat-label">real-robot success, trained from scratch</span></div>
     </div>
+    <p class="status-note">🔴 Live: a corrected training run comparing "one AI trained on all three robots" vs. "three separately trained" is running right now.</p>
   </div>
 </header>
 
-<!-- ─── NAV (sticky) ──────────────────────────────────────────────────────── -->
+<!-- ─── NAV ───────────────────────────────────────────────────────────────── -->
 <nav class="sticky-nav" id="stickyNav">
   <div class="container nav-inner">
-    <a href="#tasks">Tasks</a>
-    <a href="#checkpoints">Checkpoints</a>
-    <a href="#results">Results</a>
-    <a href="#execution">Execution</a>
-    <a href="#method">Method</a>
-    <a href="#vlm">VLM Stack</a>
-    <a href="#crossembodiment">Cross-Embodiment</a>
-    <a href="#realrobot">Real Robot</a>
+    <a href="#what">What This Is</a>
+    <a href="#seeit">See It Working</a>
+    <a href="#findings">What We Found</a>
+    <a href="#status">Current Status</a>
   </div>
 </nav>
 
-<!-- ─── 6-TASK OVERVIEW ───────────────────────────────────────────────────── -->
-<section class="section section-dark" id="tasks">
+<!-- ─── WHAT THIS IS ──────────────────────────────────────────────────────── -->
+<section class="plain-section section-dark" id="what">
   <div class="container">
-    <h2>6-Task Pick-and-Place Benchmark</h2>
-    <p class="section-desc">
-      The policy receives a language instruction and must pick a specified block and
-      place it on the correct side of a workspace divider at <em>x</em>&nbsp;=&nbsp;0.68&nbsp;m.
-      Success is binary: far side requires final <em>x</em>&nbsp;&gt;&nbsp;0.70&nbsp;m,
-      near side <em>x</em>&nbsp;&lt;&nbsp;0.66&nbsp;m.
+    <h2>What This Is</h2>
+    <p>
+      Robots are starting to move out of factories and into places like homes, where
+      they'll need to work alongside people rather than repeat one fixed motion
+      forever. A new kind of AI model — trained on huge amounts of robot video and
+      language — promises to make this possible: show it a task in plain English, and
+      it figures out the motion itself, rather than being hand-programmed for every
+      situation.
     </p>
-
-    <div class="task-grid">
-      <div class="task-card task-red">
-        <div class="task-header">
-          <span class="task-dot" style="background:#e05c5c"></span>
-          <strong>T0</strong> — Red → Far
-        </div>
-        <p class="task-instr">"Move the red block to the far side"</p>
-        <div class="task-result"><span class="badge badge-success">9/10</span><span class="task-pct">90% (pos_v3)</span></div>
-      </div>
-      <div class="task-card task-red">
-        <div class="task-header">
-          <span class="task-dot" style="background:#e05c5c"></span>
-          <strong>T1</strong> — Red → Near
-        </div>
-        <p class="task-instr">"Move the red block to the near side"</p>
-        <div class="task-result"><span class="badge badge-mid">4/10</span><span class="task-pct">40% (pos_v3)</span></div>
-      </div>
-      <div class="task-card task-blue">
-        <div class="task-header">
-          <span class="task-dot" style="background:#4e79a7"></span>
-          <strong>T2</strong> — Blue → Far
-        </div>
-        <p class="task-instr">"Move the blue block to the far side"</p>
-        <div class="task-result"><span class="badge badge-success">9/10</span><span class="task-pct">90% (pos_v3)</span></div>
-      </div>
-      <div class="task-card task-blue">
-        <div class="task-header">
-          <span class="task-dot" style="background:#4e79a7"></span>
-          <strong>T3</strong> — Blue → Near
-        </div>
-        <p class="task-instr">"Move the blue block to the near side"</p>
-        <div class="task-result"><span class="badge badge-mid">4/10</span><span class="task-pct">40% (pos_v3)</span></div>
-      </div>
-      <div class="task-card task-green">
-        <div class="task-header">
-          <span class="task-dot" style="background:#59a14f"></span>
-          <strong>T4</strong> — Green → Far
-        </div>
-        <p class="task-instr">"Move the green block to the far side"</p>
-        <div class="task-result"><span class="badge badge-fail">0/10</span><span class="task-pct">0% — open problem</span></div>
-      </div>
-      <div class="task-card task-green">
-        <div class="task-header">
-          <span class="task-dot" style="background:#59a14f"></span>
-          <strong>T5</strong> — Green → Near
-        </div>
-        <p class="task-instr">"Move the green block to the near side"</p>
-        <div class="task-result"><span class="badge badge-fail">0/10</span><span class="task-pct">0% — open problem</span></div>
-      </div>
-    </div>
-
-    <div class="insight-banner">
-      <span class="insight-icon">↔</span>
-      <div>
-        <strong>Far-side advantage:</strong> Far tasks (T0, T2, T4) consistently outperform near-side tasks across all checkpoints.
-        Near-side carry requires the arm to move inward toward the robot base, conflicting with the DLS null-space configuration.
-        <strong>Green block (T4, T5) remains unsolved</strong> — the y = +0.05&nbsp;m position approaches joint limits.
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ─── CHECKPOINT COMPARISON ─────────────────────────────────────────────── -->
-<section class="section" id="checkpoints">
-  <div class="container">
-    <h2>Checkpoint Comparison</h2>
-    <p class="section-desc">
-      Five policy checkpoints evaluated across 10 trials per task. Select a checkpoint
-      to see its per-task success rates and a sample rollout video.
+    <p style="margin-top:1rem">
+      This project takes one of these models and asks four practical questions:
+      can we teach it to reliably do a real task on a specific robot? Does what it
+      learns on one robot arm carry over to a different one? Can it work alongside a
+      person, asking for help when it gets stuck rather than failing silently? And
+      does any of this actually work on a real physical robot, not just in
+      simulation?
     </p>
+  </div>
+</section>
 
-    <!-- Checkpoint selector -->
-    <div class="ckpt-tabs">
-      <button class="ckpt-tab" data-ckpt="base" onclick="selectCkpt('base')">
-        <span class="ckpt-name">pi05_base</span>
-        <span class="ckpt-sub">Zero-shot</span>
-        <span class="ckpt-score">15%</span>
-      </button>
-      <button class="ckpt-tab" data-ckpt="vel" onclick="selectCkpt('vel')">
-        <span class="ckpt-name">vel_99k</span>
-        <span class="ckpt-sub">Velocity ctrl · 100k</span>
-        <span class="ckpt-score">0%</span>
-      </button>
-      <button class="ckpt-tab" data-ckpt="pos200k" onclick="selectCkpt('pos200k')">
-        <span class="ckpt-name">pos_200k</span>
-        <span class="ckpt-sub">Position ctrl · 200k</span>
-        <span class="ckpt-score">20%</span>
-      </button>
-      <button class="ckpt-tab" data-ckpt="posv2" onclick="selectCkpt('posv2')">
-        <span class="ckpt-name">pos_v2</span>
-        <span class="ckpt-sub">10Hz + EE xyz · 500k</span>
-        <span class="ckpt-score">40%</span>
-      </button>
-      <button class="ckpt-tab active" data-ckpt="posv3" onclick="selectCkpt('posv3')">
-        <span class="ckpt-name">pos_v3</span>
-        <span class="ckpt-sub">Warm-start + near demos</span>
-        <span class="ckpt-score best-score">43%</span>
-      </button>
-    </div>
-
-    <!-- Checkpoint detail panel -->
-    <div class="ckpt-panel" id="ckptPanel">
-
-      <!-- per-task bars -->
-      <div class="ckpt-bars" id="ckptBars"></div>
-
-      <!-- video browser -->
-      <div class="ckpt-video-section">
-        <div class="video-task-tabs" id="videoTaskTabs"></div>
-        <div class="video-wrap" id="ckptVideo">
-          <video id="mainVideo" controls muted loop playsinline>
-            <source id="mainVideoSrc" src="" type="video/mp4">
-          </video>
-          <div class="video-label" id="videoLabel"></div>
-        </div>
-        <p class="video-note" id="videoNote"></p>
+<!-- ─── SEE IT WORKING ────────────────────────────────────────────────────── -->
+<section class="plain-section" id="seeit">
+  <div class="container">
+    <h2>See It Working</h2>
+    <p>Four short clips covering the full range of what's been tried — including where it didn't work.</p>
+    <div class="video-grid">
+      <div class="video-card">
+        <video controls muted loop playsinline>
+          <source src="assets/videos/pos_v3/task0.mp4" type="video/mp4">
+        </video>
+        <div class="caption"><b>Simulation, best result.</b> The trained policy picks up a block and places it on the correct side, from a language instruction alone.</div>
       </div>
-
-    </div>
-
-    <!-- Change history -->
-    <div class="ckpt-changes">
-      <h3>What changed between checkpoints</h3>
-      <div class="changes-list">
-        <div class="change-item">
-          <div class="change-dot base-dot"></div>
-          <div class="change-body">
-            <strong>pi05_base</strong> — Pretrained foundation model, no Baxter fine-tuning.
-            Achieves 70% on T0 (red→far) showing strong transfer priors.
-            Blue/green failure reveals colour-grounding limitation.
-          </div>
-        </div>
-        <div class="change-item">
-          <div class="change-dot vel-dot"></div>
-          <div class="change-body">
-            <strong>vel_99k</strong> — First fine-tune. Velocity-control action representation:
-            policy predicts joint velocity commands directly. 4 tasks (no green). 100k steps.
-            0% success — gripper never closes; policy approaches but cannot grasp.
-          </div>
-        </div>
-        <div class="change-item">
-          <div class="change-dot pos200k-dot"></div>
-          <div class="change-body">
-            <strong>pos_200k</strong> — Switched to position control (predict target joint angles →
-            P-controller converts to velocities). Added green block. 6 tasks. 200k steps.
-            20% overall; T2 blue→far gets 8/10 but mostly by pushing, not picking.
-          </div>
-        </div>
-        <div class="change-item">
-          <div class="change-dot posv2-dot"></div>
-          <div class="change-body">
-            <strong>pos_v2</strong> — Fixed demo recording: native 10&nbsp;Hz (no downsampling).
-            Added end-effector XYZ to state (8-dim → 11-dim). 500k steps. Final loss 0.004.
-            40% overall; block-lift rate doubles to 50%.
-          </div>
-        </div>
-        <div class="change-item">
-          <div class="change-dot posv3-dot"></div>
-          <div class="change-body">
-            <strong>pos_v3</strong> — Warm-started from pos_v2 (not from scratch).
-            Lower peak LR (5e-5 vs 2e-4). 250 near-side demos per task (vs 100).
-            200k additional steps. Best result: 43% overall, 60% far-side average.
-          </div>
-        </div>
+      <div class="video-card">
+        <video controls muted loop playsinline>
+          <source src="assets/videos/real_robot/sim_to_real_episode4.mp4" type="video/mp4">
+        </video>
+        <div class="caption"><b>Real robot, first attempt.</b> A policy that worked well in simulation doesn't transfer directly to the physical robot — the arm never reaches the block.</div>
+      </div>
+      <div class="video-card">
+        <video controls muted loop playsinline>
+          <source src="assets/videos/real_robot/real_data_pilot_success_trial7.mp4" type="video/mp4">
+        </video>
+        <div class="caption"><b>Real robot, trained from scratch.</b> A second policy, trained only on real demonstrations taught by hand, succeeds on the same hardware.</div>
+      </div>
+      <div class="video-card">
+        <img src="assets/cross_embodiment/franka_twoblocks.png" alt="Franka arm setup">
+        <div class="caption"><b>A second robot arm (Franka).</b> The same task, rebuilt for a completely different robot, to test whether the approach generalises.</div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ─── RESULTS CHART ─────────────────────────────────────────────────────── -->
-<section class="section section-dark" id="results">
+<!-- ─── WHAT WE FOUND ─────────────────────────────────────────────────────── -->
+<section class="plain-section section-dark" id="findings">
   <div class="container">
-    <h2>Results Overview</h2>
-    <div class="results-layout">
-      <div class="results-chart-wrap">
-        <img src="assets/success_bar_chart.png" alt="Per-task success rates across all checkpoints" style="width:100%;border-radius:8px"/>
-        <p class="img-caption">Per-task trial-level success rates across all five checkpoints. Background shading indicates block colour. vel_99k bars are zero (not visible) — that checkpoint achieved 0% across all evaluated tasks.</p>
-      </div>
-      <div class="results-summary">
-        <h3>Key Numbers</h3>
-        <div class="result-kpi-grid">
-          <div class="kpi"><span class="kpi-num">43%</span><span class="kpi-label">Overall (pos_v3, 26/60)</span></div>
-          <div class="kpi"><span class="kpi-num">60%</span><span class="kpi-label">Far-side average (pos_v3)</span></div>
-          <div class="kpi"><span class="kpi-num">27%</span><span class="kpi-label">Near-side average (pos_v3)</span></div>
-          <div class="kpi"><span class="kpi-num">90%</span><span class="kpi-label">Block lifted · T0 red→far</span></div>
-          <div class="kpi"><span class="kpi-num">15%</span><span class="kpi-label">Zero-shot baseline (9/60)</span></div>
-          <div class="kpi"><span class="kpi-num">0%</span><span class="kpi-label">Green block — all checkpoints</span></div>
-        </div>
-
-        <h3 style="margin-top:1.5rem">Block Lifted vs Task Success</h3>
-        <p class="small-note">Block lifted (z &gt; 0.295 m) distinguishes true pick-and-place from accidental pushing.</p>
-        <div class="lifted-table">
-          <table>
-            <thead><tr><th>Task</th><th>Success</th><th>Lifted</th><th>Mode</th></tr></thead>
-            <tbody>
-              <tr><td>T0 red→far</td><td>90%</td><td class="lifted-hi">90%</td><td>Pick ✓</td></tr>
-              <tr><td>T1 red→near</td><td>40%</td><td class="lifted-hi">70%</td><td>Pick ✓</td></tr>
-              <tr><td>T2 blue→far</td><td>90%</td><td>80%</td><td>Pick ✓</td></tr>
-              <tr><td>T3 blue→near</td><td>40%</td><td>70%</td><td>Pick ✓</td></tr>
-              <tr><td>T4 green→far</td><td>0%</td><td class="lifted-lo">0%</td><td>Fail</td></tr>
-              <tr><td>T5 green→near</td><td>0%</td><td class="lifted-lo">0%</td><td>Fail</td></tr>
-            </tbody>
-          </table>
-          <p class="small-note">pos_v3 checkpoint. Earlier: pos_200k T2 had 80% task success but only 30% lifted — policy was pushing, not picking.</p>
-        </div>
-      </div>
-    </div>
-
-    <!-- Full success table -->
-    <details class="expandable">
-      <summary>Full per-task results table (all 5 checkpoints)</summary>
-      <div class="table-wrap" style="margin-top:1rem">
-        <table class="results-table">
-          <thead>
-            <tr>
-              <th>Task</th>
-              <th>pi05_base</th>
-              <th>vel_99k</th>
-              <th>pos_200k</th>
-              <th>pos_v2</th>
-              <th>pos_v3</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr class="row-red"><td>T0 red → far</td><td>7/10</td><td>0/10</td><td>1/10</td><td>6/10</td><td class="best-cell">9/10</td></tr>
-            <tr class="row-red"><td>T1 red → near</td><td>2/10</td><td>0/10</td><td>2/10</td><td class="best-cell">4/10</td><td class="best-cell">4/10</td></tr>
-            <tr class="row-blue"><td>T2 blue → far</td><td>0/10</td><td>0/10</td><td>8/10</td><td>7/10</td><td class="best-cell">9/10</td></tr>
-            <tr class="row-blue"><td>T3 blue → near</td><td>0/10</td><td>0/10</td><td>0/10</td><td class="best-cell">5/10</td><td>4/10</td></tr>
-            <tr class="row-green"><td>T4 green → far</td><td>0/10</td><td>—</td><td>1/10</td><td class="best-cell">2/10</td><td>0/10</td></tr>
-            <tr class="row-green"><td>T5 green → near</td><td>0/10</td><td>—</td><td>0/10</td><td>0/10</td><td>0/10</td></tr>
-            <tr class="total-row"><td><strong>Total</strong></td><td>9/60 (15%)</td><td>0/40 (0%)</td><td>12/60 (20%)</td><td>24/60 (40%)</td><td class="best-cell"><strong>26/60 (43%)</strong></td></tr>
-          </tbody>
-        </table>
-      </div>
-    </details>
+    <h2>What We Found</h2>
+    <p>The single biggest lesson of this project: when something didn't work, it was almost always
+    traceable to a specific, fixable problem with the data or the setup — not a fundamental
+    limit of the AI model itself.</p>
+    <ul class="finding-list">
+      <li><b>Careful setup matters more than raw training time.</b> Switching how the robot's
+      movements were represented, and fixing a dataset that was silently missing an entire
+      task, made a bigger difference than any amount of extra training.</li>
+      <li><b>Extending to new robot arms works — up to a point.</b> The AI adapted to two further
+      robot arms individually. Whether training one AI on all three robots at once actually
+      helps (versus training three separate ones) is the one open question this project hasn't
+      answered yet — an early attempt to measure this was invalidated by a bug, and a corrected
+      version is running now.</li>
+      <li><b>Asking for help works, but simply.</b> We built a system where the robot attempts a
+      task on its own, and after a few failed tries, hands it to a person to finish by hand —
+      then carries on automatically. It's a basic hand-off, not a negotiation, but it works.</li>
+      <li><b>Simulation-trained skill didn't transfer directly to the real robot</b> — it failed
+      every time. Training a new, smaller policy directly on real demonstrations, instead,
+      worked about half the time. That gap between simulation and reality is the project's
+      most important open problem.</li>
+    </ul>
   </div>
 </section>
 
-<!-- ─── EXECUTION SEQUENCE ────────────────────────────────────────────────── -->
-<section class="section" id="execution">
+<!-- ─── CURRENT STATUS ────────────────────────────────────────────────────── -->
+<section class="plain-section" id="status">
   <div class="container">
-    <h2>Execution Sequence</h2>
-    <p class="section-desc">
-      Successful pick-and-place trial — <strong>pos_v3</strong>, Task T0 (red block → far side).
-      9 out of 10 trials succeeded for this task. Final block position: <em>x</em> = 0.758&nbsp;m
-      (threshold: <em>x</em> &gt; 0.70&nbsp;m).
+    <h2>Current Status</h2>
+    <p>
+      This project is being written up as an MRes dissertation. The write-up is
+      transparent about what's resolved and what's still open — including one
+      training comparison still running as this page is published. Full technical
+      detail, all data, and the complete engineering log are in the code repository
+      linked above.
     </p>
-
-    <div class="exec-grid">
-      <figure class="exec-frame">
-        <img src="assets/exec_sequence/a_initial.png" alt="Initial configuration" />
-        <figcaption>
-          <span class="frame-label">(a) Initial</span>
-          Block at x&nbsp;=&nbsp;0.600&nbsp;m · Arm at home · Gripper open
-        </figcaption>
-      </figure>
-      <figure class="exec-frame">
-        <img src="assets/exec_sequence/b_approach.png" alt="Approach" />
-        <figcaption>
-          <span class="frame-label">(b) Approach</span>
-          Step 20 · Arm translating toward block · Gripper open
-        </figcaption>
-      </figure>
-      <figure class="exec-frame">
-        <img src="assets/exec_sequence/c_descent.png" alt="Descent" />
-        <figcaption>
-          <span class="frame-label">(c) Descent</span>
-          Step 35 · Gripper descending · Aligned to within 3&nbsp;mm
-        </figcaption>
-      </figure>
-      <figure class="exec-frame">
-        <img src="assets/exec_sequence/d_lift.png" alt="Lift" />
-        <figcaption>
-          <span class="frame-label">(d) Lift</span>
-          Step 55 · Gripper closed · Block at z&nbsp;=&nbsp;0.347&nbsp;m
-        </figcaption>
-      </figure>
-      <figure class="exec-frame">
-        <img src="assets/exec_sequence/e_carry.png" alt="Carry" />
-        <figcaption>
-          <span class="frame-label">(e) Carry</span>
-          Step 160 · Block at x&nbsp;=&nbsp;0.747&nbsp;m (far side)
-        </figcaption>
-      </figure>
-      <figure class="exec-frame">
-        <img src="assets/exec_sequence/f_place.png" alt="Placement" />
-        <figcaption>
-          <span class="frame-label">(f) Place</span>
-          Step 180 · Gripper opens · Block placed at x&nbsp;=&nbsp;0.758&nbsp;m ✓
-        </figcaption>
-      </figure>
-    </div>
-
-    <!-- Diagnostic plots (expandable) -->
-    <details class="expandable" style="margin-top:2rem">
-      <summary>Diagnostic plots — policy internals</summary>
-      <div class="plots-grid" style="margin-top:1.2rem">
-        <figure class="plot-fig">
-          <img src="assets/plots/03_policy_actions_7d.png" alt="Per-joint policy actions" />
-          <figcaption>Per-joint policy action magnitude over a 150-step episode. Shoulder (s1) and elbow (e1) dominate; wrist joints (w0–w2) correctly suppressed.</figcaption>
-        </figure>
-        <figure class="plot-fig">
-          <img src="assets/plots/04_state_mismatch.png" alt="Gripper state mismatch" />
-          <figcaption>Gripper state divergence from train–inference mismatch: without fix (dashed) policy begins at gripper_norm ≈ 0.65 and immediately enters carry mode.</figcaption>
-        </figure>
-        <figure class="plot-fig">
-          <img src="assets/plots/06_chunk_repetition.png" alt="Chunk repetition / hysteresis" />
-          <figcaption>Gripper hysteresis within an action chunk: close–open–close pattern causes block escape mid-carry. Fixed by latching gripper closed once gripper_norm &gt; 0.5.</figcaption>
-        </figure>
-        <figure class="plot-fig">
-          <img src="assets/plots/01_ctrl_all_joints.png" alt="Joint control signals" />
-          <figcaption>Joint control signals over a full inference episode, showing the characteristic ramp-up in shoulder activity during the approach phase.</figcaption>
-        </figure>
-      </div>
-    </details>
   </div>
 </section>
 
-<!-- ─── METHOD ────────────────────────────────────────────────────────────── -->
-<section class="section section-dark" id="method">
-  <div class="container">
-    <h2>Method</h2>
-
-    <div class="pipeline">
-      <div class="pipe-step">
-        <div class="pipe-icon">🎬</div>
-        <h3>Demo Collection</h3>
-        <p>9-phase scripted controller using DLS inverse kinematics. 100 demos × 6 tasks = 600 episodes at native 10&nbsp;Hz. Cube start randomised ±4&nbsp;cm.</p>
-        <code>record_demos.py</code>
-      </div>
-      <div class="pipe-arrow">→</div>
-      <div class="pipe-step">
-        <div class="pipe-icon">🗄️</div>
-        <h3>LeRobot Format</h3>
-        <p>HDF5 → LeRobot parquet at 10&nbsp;Hz. Transform chain: RepackTransform → LiberoInputs → Normalize → TokenizePrompt → PadStates → ResizeImages.</p>
-        <code>convert_to_lerobot.py</code>
-      </div>
-      <div class="pipe-arrow">→</div>
-      <div class="pipe-step">
-        <div class="pipe-icon">🧠</div>
-        <h3>LoRA Fine-tuning</h3>
-        <p>LoRA rank&nbsp;16 on PaliGemma-2B&nbsp;+&nbsp;Gemma-300M action expert. Flow matching loss. AdamW, cosine LR, ~200–500k steps from pi05_base.</p>
-        <code>train.py pi05_baxter_pickplace_pos_v3</code>
-      </div>
-      <div class="pipe-arrow">→</div>
-      <div class="pipe-step">
-        <div class="pipe-icon">🤖</div>
-        <h3>P-Controller Inference</h3>
-        <p>Policy outputs target joint angles. P-controller: vel = clip(40 × (q_target − q), −1.5, 1.5 rad/s). WebSocket server + MuJoCo client at 10&nbsp;Hz.</p>
-        <code>run_inference.py</code>
-      </div>
-    </div>
-
-    <!-- Architecture -->
-    <div class="two-col" style="margin-top:3rem">
-      <div class="col-text">
-        <h3>π0.5 — Vision-Language-Action</h3>
-        <p>π0.5 is built on <strong>PaliGemma</strong> (2B VLM) with an added <strong>300M action expert</strong>
-        communicating via cross-attention at every transformer layer. It generates actions via
-        <strong>flow matching</strong> — denoising Gaussian noise into a 10-step action chunk.</p>
-
-        <div class="math-block">
-          x<sub>t</sub> = t · ε + (1 − t) · a<br>
-          u<sub>t</sub> = ε − a<br>
-          ℒ = MSE(v<sub>θ</sub>(x<sub>t</sub>, t, obs), u<sub>t</sub>)
-        </div>
-
-        <h3 style="margin-top:1.5rem">LoRA: Why It Fits on One GPU</h3>
-        <div class="hp-grid">
-          <div class="hp-row"><span>Full fine-tuning VRAM</span><code>~50 GB</code></div>
-          <div class="hp-row"><span>LoRA r=16 VRAM</span><code>~17 GB</code></div>
-          <div class="hp-row"><span>Trainable params</span><code>~30–50M of 3B</code></div>
-          <div class="hp-row"><span>Hardware</span><code>RTX 5090 32 GB</code></div>
-          <div class="hp-row"><span>Peak LR (pos runs)</span><code>2e-4 → 5e-5 (v3)</code></div>
-          <div class="hp-row"><span>Optimizer</span><code>AdamW · cosine decay</code></div>
-        </div>
-      </div>
-      <div class="col-diagram">
-        <div class="arch-box">
-          <div class="arch-row arch-input">
-            <div class="arch-block img-block">Scene<br>Camera</div>
-            <div class="arch-block img-block">Wrist<br>Camera</div>
-            <div class="arch-block lang-block">Language<br><em>"move red block far"</em></div>
-            <div class="arch-block state-block">State<br>(11-dim)</div>
-          </div>
-          <div class="arch-arrow-down">↓ patch / token embedding</div>
-          <div class="arch-row arch-model">
-            <div class="arch-big paligemma">
-              PaliGemma<br><small>2B · frozen</small><br>
-              <div class="lora-badge">+ LoRA r=16</div>
-            </div>
-            <div class="arch-big action-expert">
-              Action Expert<br><small>300M · frozen</small><br>
-              <div class="lora-badge">+ LoRA r=16</div>
-            </div>
-          </div>
-          <div class="arch-arrow-down">↓ 10-step Euler denoising</div>
-          <div class="arch-row arch-output">
-            <div class="arch-block out-block">Target Joint Angles<br>(10 × 7-DOF)</div>
-          </div>
-          <div class="arch-arrow-down">↓ P-controller (K<sub>P</sub>=40)</div>
-          <div class="arch-row arch-output">
-            <div class="arch-block ctrl-block">Joint Velocity Commands<br>clip(·, −1.5, 1.5 rad/s)</div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Demo frames -->
-    <h3 style="margin-top:2.5rem">Simulated Demonstrations</h3>
-    <p class="section-desc">Scene camera and wrist camera views from scripted demonstration collection (early cube-push phase).</p>
-    <div class="frame-grid">
-      <figure>
-        <img src="assets/scene_approach.png" alt="Scene camera — approach" />
-        <figcaption>Scene camera · Approach phase</figcaption>
-      </figure>
-      <figure>
-        <img src="assets/scene_push.png" alt="Scene camera — push" />
-        <figcaption>Scene camera · Push phase</figcaption>
-      </figure>
-      <figure>
-        <img src="assets/wrist_approach.png" alt="Wrist camera — approach" />
-        <figcaption>Wrist camera · Approach phase</figcaption>
-      </figure>
-      <figure>
-        <img src="assets/wrist_push.png" alt="Wrist camera — push" />
-        <figcaption>Wrist camera · Push phase</figcaption>
-      </figure>
-    </div>
-  </div>
-</section>
-
-<!-- ─── VLM STACK ─────────────────────────────────────────────────────────── -->
-<section class="section" id="vlm">
-  <div class="container">
-    <h2>VLM Stack</h2>
-    <p class="section-desc">
-      A Gemma-3-12B planner sits on top of the low-level policy, converting a goal image
-      into an ordered sequence of manipulation primitives and closing the loop with a
-      goal-check / re-plan cycle. This design was arrived at after an earlier pilot
-      (GroundingDINO detection vs. free-form Gemma monitoring on a real-world sorting
-      task) showed that Gemma's structured, multi-object output was unreliable — the
-      per-block querying strategy below sidesteps that failure mode directly.
-    </p>
-
-    <div class="vlm-grid">
-      <div class="vlm-card">
-        <div class="vlm-icon">🗺️</div>
-        <h3>Per-Block Task Planner</h3>
-        <p class="vlm-model">Gemma-3-12B-IT</p>
-        <p>Receives the current scene image and a goal scene image, and queries the model
-        <strong>once per block colour</strong> rather than once for the whole scene —
-        each query is restricted to a single object with a strict two-line
-        (<code>current: near/far</code> / <code>goal: near/far</code>) answer format.
-        This avoids the multi-object binding errors that a single combined query produced
-        during earlier testing. Mismatched blocks are appended to an ordered primitive list.</p>
-        <div class="vlm-detail">
-          <div class="hp-row"><span>Input</span><code>current + goal images, per colour</code></div>
-          <div class="hp-row"><span>Output</span><code>ordered primitive list</code></div>
-          <div class="hp-row"><span>Goal space</span><code>2³ = 8 near/far configurations</code></div>
-        </div>
-      </div>
-
-      <div class="vlm-card">
-        <div class="vlm-icon">🔁</div>
-        <h3>Closed-Loop Goal Checking</h3>
-        <p class="vlm-model">Gemma-3-12B-IT</p>
-        <p>A second, independent yes/no query checks whether all three blocks already
-        match the goal — used both before planning starts and after every executed
-        primitive. If the goal isn't met, the scene is re-rendered and the
-        plan → execute → check cycle repeats (up to 3 rounds). This is the mechanism
-        that will detect and react to a human repositioning a block mid-task in the
-        planned collective-task evaluation.</p>
-        <div class="vlm-detail">
-          <div class="hp-row"><span>Check</span><code>independent yes/no query</code></div>
-          <div class="hp-row"><span>Trigger</span><code>after every primitive</code></div>
-          <div class="hp-row"><span>Status</span><code>implemented · quantitative eval pending</code></div>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ─── CROSS-EMBODIMENT ──────────────────────────────────────────────────── -->
-<section class="section section-dark" id="crossembodiment">
-  <div class="container">
-    <h2>Cross-Embodiment Generalisation</h2>
-    <p class="section-desc">
-      Extending the same fine-tuning pipeline to two further embodiments — Franka Emika
-      Panda and Unitree G1 (single arm) — to test whether a <strong>single policy trained
-      jointly across all three robots</strong> transfers skill positively or negatively
-      relative to three independent solo policies. Same table, same six primitives, same
-      scripted DLS demonstration pipeline; only the kinematic chain and reach margins differ.
-    </p>
-
-    <div class="frame-grid" style="grid-template-columns:repeat(3,1fr)">
-      <figure>
-        <img src="assets/cross_embodiment/baxter_twoblocks.png" alt="Baxter tabletop scene" />
-        <figcaption>Baxter (existing)</figcaption>
-      </figure>
-      <figure>
-        <img src="assets/cross_embodiment/franka_twoblocks.png" alt="Franka tabletop scene" />
-        <figcaption>Franka Emika Panda (new)</figcaption>
-      </figure>
-      <figure>
-        <img src="assets/cross_embodiment/g1_twoblocks.png" alt="G1 tabletop scene" />
-        <figcaption>Unitree G1, right arm (new)</figcaption>
-      </figure>
-    </div>
-
-    <div class="results-layout" style="margin-top:2rem">
-      <div class="results-summary">
-        <h3>Demonstration Collection Yield</h3>
-        <div class="table-wrap" style="margin-top:0.75rem">
-          <table class="results-table">
-            <thead><tr><th>Task</th><th>Franka</th><th>G1</th></tr></thead>
-            <tbody>
-              <tr class="row-red"><td>0: red → far</td><td>28/30 (93%)</td><td>30/30 (100%)</td></tr>
-              <tr class="row-red"><td>1: red → near</td><td>27/30 (90%)</td><td>30/30 (100%)</td></tr>
-              <tr class="row-blue"><td>2: blue → far</td><td>17/40 (43%)</td><td>30/30 (100%)</td></tr>
-              <tr class="row-blue"><td>3: blue → near</td><td>29/40 (73%)</td><td>— (0%, excluded)</td></tr>
-              <tr class="row-green"><td>4: green → far</td><td>25/100 (25%)</td><td>23/30 (77%)</td></tr>
-              <tr class="row-green"><td>5: green → near</td><td>2/60 (3%)</td><td>— (0%, excluded)</td></tr>
-              <tr class="total-row"><td><strong>Total</strong></td><td><strong>128 episodes</strong></td><td><strong>113 episodes</strong></td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-      <div class="results-summary">
-        <h3>Status</h3>
-        <div class="result-kpi-grid">
-          <div class="kpi"><span class="kpi-num">✓</span><span class="kpi-label">Scene + demo pipeline built for both robots</span></div>
-          <div class="kpi"><span class="kpi-num">✓</span><span class="kpi-label">241 success-filtered episodes collected</span></div>
-          <div class="kpi"><span class="kpi-num">✓</span><span class="kpi-label">Joint mixture-training config validated</span></div>
-          <div class="kpi"><span class="kpi-num badge badge-mid" style="font-size:1.4rem">pending</span><span class="kpi-label">Solo vs. joint training runs not yet launched</span></div>
-        </div>
-      </div>
-    </div>
-
-    <div class="insight-banner" style="margin-top:1.5rem">
-      <span class="insight-icon">🔧</span>
-      <div>
-        <strong>Reach-margin methodology:</strong> most cross-embodiment failures traced to a
-        specific, fixable cause rather than a vague "embodiment difference" — G1's wrist camera
-        was mounted to the wrong parent frame, G1 self-collided against its own locked torso,
-        Franka's first pass derived an invalid grasp orientation from an unconstrained IK search,
-        and both robots hit genuine base-position reach trade-offs (G1 permanently gives up
-        blue-near/green-near at its best base position). Each was diagnosed and fixed individually.
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ─── REAL ROBOT DEPLOYMENT ─────────────────────────────────────────────── -->
-<section class="section" id="realrobot">
-  <div class="container">
-    <h2>Real Robot Deployment</h2>
-    <p class="section-desc">
-      Moving the fine-tuned policy from MuJoCo onto a physical Baxter robot. The
-      architecture is implemented; the first physical trial has not yet been run.
-    </p>
-
-    <div class="two-col">
-      <div class="col-text">
-        <img src="assets/de_niro.png" alt="Robot DE NIRO" style="width:60%;max-width:220px;border-radius:8px;margin-bottom:1rem" />
-        <h3>Two-Machine Split</h3>
-        <p>A remote control laptop runs ROS Indigo + <code>baxter_interface</code> (Python 2.7),
-        with direct access to joint state, gripper state, and the wrist camera. A separate
-        GPU lab PC runs the policy server, with an Intel RealSense camera attached
-        <strong>directly to it</strong> for the workspace/scene view — captured locally and
-        injected into the observation, rather than routed through the laptop.</p>
-        <div class="hp-grid">
-          <div class="hp-row"><span>Control laptop</span><code>ROS Indigo · Python 2.7 · wrist cam</code></div>
-          <div class="hp-row"><span>Lab PC</span><code>π0.5 policy server · RealSense scene cam</code></div>
-          <div class="hp-row"><span>Link</span><code>WebSocket · same wire format as sim</code></div>
-          <div class="hp-row"><span>Safety</span><code>±1.5 rad/s limit · 1.0s cmd timeout · SIGINT e-stop</code></div>
-        </div>
-      </div>
-      <div class="col-diagram">
-        <div class="arch-box">
-          <div class="arch-row arch-input">
-            <div class="arch-block img-block">Wrist Cam<br><small>on robot</small></div>
-            <div class="arch-block state-block">Joint State<br><small>ROS</small></div>
-          </div>
-          <div class="arch-arrow-down">↓ websocket (control laptop → lab PC)</div>
-          <div class="arch-row arch-model">
-            <div class="arch-big paligemma">Fine-tuned π0.5<br><small>lab PC · GPU</small></div>
-          </div>
-          <div class="arch-arrow-down">↑ RealSense scene camera injected locally</div>
-          <div class="arch-arrow-down">↓ action chunk</div>
-          <div class="arch-row arch-output">
-            <div class="arch-block ctrl-block">P-controller → joint velocities<br><small>control laptop, 10 Hz</small></div>
-          </div>
-        </div>
-        <p class="video-note" style="margin-top:1rem">
-          First validation target: single-block pick-and-place (task 0, red → far —
-          the strongest simulation task, 9/10 success on <code>pos_v3</code>), evaluated
-          under the same 10-trial protocol as every simulation checkpoint above.
-        </p>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ─── TIMELINE ──────────────────────────────────────────────────────────── -->
-<section class="section section-dark">
-  <div class="container">
-    <h2>Project Timeline</h2>
-    <div class="timeline">
-      <div class="tl-item done"><div class="tl-dot"></div><div class="tl-content"><strong>MJCF model</strong><span>15-DOF Baxter in MuJoCo · dynamic velocity actuators · collision masks · 3 cameras</span></div></div>
-      <div class="tl-item done"><div class="tl-dot"></div><div class="tl-content"><strong>Cube push demos</strong><span>100 scripted push episodes · P + gravity-comp controller · LeRobot conversion</span></div></div>
-      <div class="tl-item done"><div class="tl-dot"></div><div class="tl-content"><strong>Velocity-control fine-tuning</strong><span>100k steps · 4 tasks · policy learns approach but cannot grasp</span></div></div>
-      <div class="tl-item done"><div class="tl-dot"></div><div class="tl-content"><strong>Position-control redesign</strong><span>Target joint angles + P-controller · resolved train–inference mismatches · 6 tasks</span></div></div>
-      <div class="tl-item done"><div class="tl-dot"></div><div class="tl-content"><strong>pos_200k</strong><span>200k steps · 12/60 trials · 8/10 on blue→far (push-mode)</span></div></div>
-      <div class="tl-item done"><div class="tl-dot"></div><div class="tl-content"><strong>pos_v2</strong><span>10&nbsp;Hz native · 11-dim state · 500k steps · 24/60 trials · 50% lift rate</span></div></div>
-      <div class="tl-item done"><div class="tl-dot"></div><div class="tl-content"><strong>pos_v3</strong><span>Warm-start from v2 · 250 near-side demos/task · 200k steps · 26/60 trials (43%) · best checkpoint</span></div></div>
-      <div class="tl-item done"><div class="tl-dot"></div><div class="tl-content"><strong>VLM Planner</strong><span>Gemma-3-12B, per-block querying + closed-loop goal-check/replan cycle · 8-configuration goal space</span></div></div>
-      <div class="tl-item active"><div class="tl-dot"></div><div class="tl-content"><strong>Green block — open problem</strong><span>T4/T5 achieve 0% across all checkpoints · joint-limit workspace geometry issue</span></div></div>
-      <div class="tl-item done"><div class="tl-dot"></div><div class="tl-content"><strong>Cross-embodiment: Franka + G1 scenes &amp; demos</strong><span>128 (Franka) + 113 (G1) success-filtered episodes collected · joint mixture-training config validated</span></div></div>
-      <div class="tl-item active"><div class="tl-dot"></div><div class="tl-content"><strong>Cross-embodiment: solo vs. joint training</strong><span>Franka solo, G1 solo, and joint cross-embodiment runs not yet launched</span></div></div>
-      <div class="tl-item done"><div class="tl-dot"></div><div class="tl-content"><strong>Real-robot deployment architecture</strong><span>ROS client (control laptop) + RealSense-injecting policy server (lab PC) · same P-controller and grasp-latch logic as sim</span></div></div>
-      <div class="tl-item active"><div class="tl-dot"></div><div class="tl-content"><strong>Real-robot physical validation</strong><span>Single-block pick-and-place trial on physical Baxter — scheduled, not yet run</span></div></div>
-      <div class="tl-item active"><div class="tl-dot"></div><div class="tl-content"><strong>Human-robot collective task</strong><span>Evaluation protocol defined (planner + policy + human mid-task intervention) · trials not yet run</span></div></div>
-    </div>
-  </div>
-</section>
-
-<!-- ─── FOOTER ─────────────────────────────────────────────────────────────── -->
-<footer class="footer">
-  <div class="container">
-    <p>Built with <a href="https://github.com/Physical-Intelligence/openpi">openpi</a> · <a href="https://mujoco.org">MuJoCo</a> · <a href="https://github.com/huggingface/lerobot">LeRobot</a> · <a href="https://huggingface.co/google/gemma-3-12b-it">Gemma-3</a></p>
-    <p class="footer-small">Robot Intelligence Lab · Imperial College London · 2026 · <a href="mailto:s.patwardhan25@imperial.ac.uk">s.patwardhan25@imperial.ac.uk</a></p>
-  </div>
+<footer style="padding:2.5rem 0; text-align:center; color:var(--text3); font-size:0.85rem; border-top:1px solid var(--border);">
+  Saniya Patwardhan · Robot Intelligence Lab, Imperial College London · 2025–2026
 </footer>
 
-<!-- ─── JAVASCRIPT ─────────────────────────────────────────────────────────── -->
 <script>
-// ── Data ──────────────────────────────────────────────────────────────────────
-const CHECKPOINTS = {
-  base:    { label: 'pi05_base',  desc: 'Zero-shot pretrained model (no fine-tuning)', hasVideo: true,  folder: 'base',   scores: [7,2,0,0,0,0], total:'9/60 (15%)' },
-  vel:     { label: 'vel_99k',    desc: 'Velocity control · 100k steps · 4 tasks',     hasVideo: false, folder: null,     scores: [0,0,0,0,null,null], total:'0/40 (0%)' },
-  pos200k: { label: 'pos_200k',   desc: 'Position control · 200k steps · 6 tasks',     hasVideo: false, folder: null,     scores: [1,2,8,0,1,0], total:'12/60 (20%)' },
-  posv2:   { label: 'pos_v2',     desc: 'Native 10Hz + EE xyz · 500k steps',           hasVideo: true,  folder: 'pos_v2', scores: [6,4,7,5,2,0], total:'24/60 (40%)' },
-  posv3:   { label: 'pos_v3',     desc: 'Warm-start from v2 · 250 near demos · 200k steps', hasVideo: true, folder: 'pos_v3', scores: [9,4,9,4,0,0], total:'26/60 (43%) ★' },
-};
-
-const TASKS = [
-  { id: 0, label: 'T0 red→far',   color: '#e05c5c' },
-  { id: 1, label: 'T1 red→near',  color: '#e05c5c' },
-  { id: 2, label: 'T2 blue→far',  color: '#4e79a7' },
-  { id: 3, label: 'T3 blue→near', color: '#4e79a7' },
-  { id: 4, label: 'T4 green→far', color: '#59a14f' },
-  { id: 5, label: 'T5 green→near',color: '#59a14f' },
-];
-
-const NOTES = {
-  base:    ['7/10 success. 80% lift rate. Strong transfer prior — model grasps without any fine-tuning.',
-            '2/10 success. Colour grounding is imperfect without task-specific training.',
-            '0/10. Policy approaches wrong object — red-block prior dominates.',
-            '0/10. Premature grasp at step 5 — no colour grounding.',
-            '0/10. Collapsed prediction — arm hovers at pregrasp.',
-            '0/10. Collapsed prediction.'],
-  vel:     ['0/10. Gripper never closes — mean close step: 762. Policy approaches but cannot execute grasp.',
-            '0/10. Mean close step: 940.',
-            '0/10. Mean close step: 179.',
-            '0/10. Mean close step: 183.',
-            'Not evaluated — green block not in training set.',
-            'Not evaluated — green block not in training set.'],
-  pos200k: ['1/10. 20% lift rate. Correct trajectory but placement 1.5cm short of threshold.',
-            '2/10. 30% lift rate. Mid-chunk gripper release causes block escape.',
-            '8/10 — but only 30% lift rate! Block displaced by arm translation (push, not pick).',
-            '0/10. Grasp error −51mm lateral — gripper closes on air.',
-            '1/10. 10% lift rate. Direction correct but insufficient displacement.',
-            '0/10. 10% lift rate. z-height error +29mm — grip site above block.'],
-  posv2:   ['6/10. 70% lift rate. Genuine pick-and-place. Mean displacement +0.116m.',
-            '4/10. 50% lift rate.',
-            '7/10. 90% lift rate — genuine pick-and-place confirmed.',
-            '5/10. 60% lift rate.',
-            '2/10. 30% lift rate. 80% direction accuracy — understands task but lacks precision.',
-            '0/10. Direction accuracy 0%.'],
-  posv3:   ['9/10. 90% lift rate. Best result. Mean displacement +0.159m. Gripper closes at step 36.',
-            '4/10. 70% lift rate. Gripper closes at step 64 (early vs. demo range 75–107).',
-            '9/10. 80% lift rate. 90% direction accuracy.',
-            '4/10. 70% lift rate. 40% direction accuracy.',
-            '0/10. Regression from pos_v2 — collapsed prediction. Arm hovers at pregrasp.',
-            '0/10. Green block position (y=+0.05m) requires joint-limit configuration.'],
-};
-
-let currentCkpt = 'posv3';
-let currentTask  = 0;
-
-function selectCkpt(key) {
-  currentCkpt = key;
-  currentTask  = 0;
-  document.querySelectorAll('.ckpt-tab').forEach(t => t.classList.toggle('active', t.dataset.ckpt === key));
-  renderBars();
-  renderVideoTabs();
-  updateVideo();
-}
-
-function selectTask(tid) {
-  currentTask = tid;
-  document.querySelectorAll('.vtask-btn').forEach(b => b.classList.toggle('active', +b.dataset.task === tid));
-  updateVideo();
-}
-
-function renderBars() {
-  const ck = CHECKPOINTS[currentCkpt];
-  const container = document.getElementById('ckptBars');
-  container.innerHTML = TASKS.map((t, i) => {
-    const s = ck.scores[i];
-    if (s === null) return `
-      <div class="bar-row">
-        <span class="bar-label">${t.label}</span>
-        <div class="bar-track"><div class="bar-fill na-bar" style="width:0%"></div></div>
-        <span class="bar-val">—</span>
-      </div>`;
-    const pct = s * 10;
-    const cls = pct >= 70 ? 'bar-hi' : pct >= 30 ? 'bar-mid' : 'bar-lo';
-    return `
-      <div class="bar-row" onclick="selectTask(${i})" style="cursor:pointer">
-        <span class="bar-label">${t.label}</span>
-        <div class="bar-track">
-          <div class="bar-fill ${cls}" style="width:${pct}%;background:${t.color}aa"></div>
-        </div>
-        <span class="bar-val">${s}/10</span>
-      </div>`;
-  }).join('');
-}
-
-function renderVideoTabs() {
-  const ck = CHECKPOINTS[currentCkpt];
-  const container = document.getElementById('videoTaskTabs');
-  const videoWrap = document.getElementById('ckptVideo');
-
-  if (!ck.hasVideo) {
-    container.innerHTML = '';
-    videoWrap.innerHTML = `<div class="no-video-msg">
-      No rollout videos available for this checkpoint.<br>
-      <small>Videos are stored for: pi05_base, pos_v2, pos_v3</small></div>`;
-    document.getElementById('videoNote').textContent = '';
-    return;
-  }
-
-  // Restore video element if previously replaced
-  if (!document.getElementById('mainVideo')) {
-    videoWrap.innerHTML = `<video id="mainVideo" controls muted loop playsinline>
-      <source id="mainVideoSrc" src="" type="video/mp4">
-    </video><div class="video-label" id="videoLabel"></div>`;
-  }
-
-  container.innerHTML = TASKS.map((t, i) => `
-    <button class="vtask-btn${i === currentTask ? ' active' : ''}" data-task="${i}" onclick="selectTask(${i})"
-      style="--task-color:${t.color}">${t.label}</button>`).join('');
-}
-
-function updateVideo() {
-  const ck = CHECKPOINTS[currentCkpt];
-  if (!ck.hasVideo) return;
-
-  const vid = document.getElementById('mainVideo');
-  const src = document.getElementById('mainVideoSrc');
-  const lbl = document.getElementById('videoLabel');
-  const note = document.getElementById('videoNote');
-
-  if (!vid || !src) return;
-
-  const s = ck.scores[currentTask];
-  const path = `assets/videos/${ck.folder}/task${currentTask}.mp4`;
-  src.src = path;
-  vid.load();
-  vid.play().catch(()=>{});
-
-  const t = TASKS[currentTask];
-  lbl.textContent = `${ck.label} · ${t.label} · trial 00`;
-  lbl.style.borderLeft = `3px solid ${t.color}`;
-  note.textContent = (NOTES[currentCkpt] || [])[currentTask] || '';
-}
-
-// Sticky nav highlight
-window.addEventListener('scroll', () => {
-  const nav = document.getElementById('stickyNav');
-  nav.classList.toggle('nav-scrolled', window.scrollY > 80);
-
-  const sections = document.querySelectorAll('section[id]');
-  let active = '';
-  sections.forEach(s => { if (window.scrollY >= s.offsetTop - 120) active = s.id; });
-  document.querySelectorAll('.sticky-nav a').forEach(a => {
-    a.classList.toggle('nav-active', a.getAttribute('href') === '#' + active);
+  window.addEventListener('scroll', () => {
+    document.getElementById('stickyNav').classList.toggle('scrolled', window.scrollY > 80);
   });
-});
-
-// Init
-selectCkpt('posv3');
 </script>
 
 </body>

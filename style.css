@@ -255,6 +255,8 @@ h3 { font-size: 1.1rem; font-weight: 600; margin-bottom: 0.5rem; color: var(--te
 .pos200k-dot { background: #4e79a7; }
 .posv2-dot   { background: #59a14f; }
 .posv3-dot   { background: #7c6ff7; }
+.posv4-dot   { background: #e8a33d; }
+.v4b-dot     { background: #4ade80; }
 .change-body { font-size: 0.85rem; color: var(--text2); line-height: 1.6; }
 .change-body strong { color: var(--text); }
 

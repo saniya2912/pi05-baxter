@@ -438,3 +438,22 @@ code {
   border-radius: 4px; font-size: 0.82em; color: var(--text2);
 }
 .note { font-size: 0.78rem; color: var(--text3); line-height: 1.5; margin-top: 0.5rem; }
+
+/* ── Run divider ──────────────────────────────────────────────────────────── */
+.run-divider {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin: 3rem 0 2rem;
+  color: var(--accent);
+  font-weight: 600;
+  font-size: 1rem;
+  letter-spacing: 0.02em;
+}
+.run-divider::before,
+.run-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
